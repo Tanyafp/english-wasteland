@@ -7,12 +7,12 @@
 </style></head><body>
 <main><div class="toprow"><div><div class="tag">English Wasteland · Family console</div><h1>📊 Кабинет родителя</h1><p class="sub">Ты видишь, что действительно усвоено, а что требует повторения.</p></div><a href="./index.html">Открыть игру ↗</a></div>
 <section class="panel"><h2>Откуда брать результаты?</h2>
-<p class="muted">Без облака можно открыть отчёт JSON, сохранённый из игры. После настройки Supabase подключи родительскую почту — результаты появятся автоматически.</p>
+<p class="muted">Для автоматического сбора ответов войди в родительский кабинет ниже. Файлы вручную переносить не нужно.</p>
 <div class="formrow"><input id="jsonFile" type="file" accept=".json,application/json" aria-label="Загрузить отчёт"/><button id="readLocal">Прочитать с этого устройства</button></div>
 <div id="localStatus" class="muted" style="margin-top:9px"></div>
-<details style="margin-top:10px"><summary class="chip" style="cursor:pointer">☁️ Облачный кабинет — вход или регистрация</summary>
+<details open style="margin-top:10px;border:1px solid #648b69;border-radius:12px;padding:15px"><summary class="chip" style="cursor:pointer;font-weight:800;font-size:17px">🔐 Вход родителя — почта и пароль</summary><p class="muted">Введи почту и пароль, затем нажми «Войти» или «Регистрация». После входа здесь появится код для подключения игры.</p>
 <div class="formrow"><input id="email" type="email" placeholder="Твоя электронная почта" autocomplete="username"/><input id="password" type="password" placeholder="Пароль (от 6 символов)" autocomplete="current-password"/><button class="primary" id="signIn">Войти</button><button id="signUp">Регистрация</button><button id="signOut">Выйти</button></div>
-<div id="authStatus" class="muted" style="margin-top:9px">Для синхронизации сначала настрой config.js и SQL-схему (инструкция в README).</div>
+<div id="authStatus" class="muted" style="margin-top:9px">После входа здесь появится код для подключения игры.</div>
 <div id="pairBlock" class="hidden"><div class="notice">Одноразовый код ребёнка: <b id="pairCode" style="user-select:all;font-size:18px"></b><br/><span class="muted">Введи его в игре в разделе «Подключить к кабинету родителя».</span></div><button id="resetPair">Выдать новый код для другого устройства</button> <button id="refreshRemote">Обновить результаты</button></div>
 </details></section>
 <div class="stats"><div class="stat"><strong id="statStages">0/10</strong><small>сюжетных заданий</small></div><div class="stat"><strong id="statAccuracy">—</strong><small>верных ответов на ДЗ</small></div><div class="stat"><strong id="statHomework">0</strong><small>выполненных ДЗ</small></div><div class="stat"><strong id="statWeak">0</strong><small>слов для повторения</small></div></div>
