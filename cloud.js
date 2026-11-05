@@ -68,6 +68,42 @@
       const {data,error}=await db.from('progress').select('game_state').eq('child_id',childId).maybeSingle();
       if(error)throw error;return data?.game_state||null;
     },
+    async syncChapter2(state) {
+      const childId=localStorage.getItem('ew-child-id');
+      if (!childId || !configured) throw new Error('Сначала подключи родительский кабинет');
+      const db=await client('student');
+      const {data:{session}}=await db.auth.getSession();
+      if(!session)throw new Error('Сессия ученика закончилась — переподключи устройство');
+      const unsent=(state.attempts||[]).filter(a=>!a.synced);
+      for(let i=0;i<unsent.length;i+=150){
+        const batch=unsent.slice(i,i+150);
+        const rows=batch.map(a=>({
+          id:a.id,child_id:childId,chapter:2,task_id:a.taskId,kind:a.kind,
+          word:a.word,skill:a.skill,given_answer:a.given,expected_answer:a.expected,
+          correct:a.correct,hint_used:!!a.hintUsed,created_at:a.at
+        }));
+        const {error}=await db.from('attempts').upsert(rows,{onConflict:'id'});
+        if(error)throw error;
+        const synced=new Set(batch.map(a=>a.id));
+        state.attempts.forEach(a=>{if(synced.has(a.id))a.synced=true});
+      }
+      const {error}=await db.from('chapter_progress').upsert({
+        child_id:childId,chapter:2,
+        game_state:{...state,attempts:undefined},
+        updated_at:new Date().toISOString()
+      },{onConflict:'child_id,chapter'});
+      if(error)throw error;
+      return true;
+    },
+    async getChapter2State() {
+      const childId=localStorage.getItem('ew-child-id');
+      if(!childId || !configured)return null;
+      const db=await client('student');
+      const {data,error}=await db.from('chapter_progress')
+        .select('game_state').eq('child_id',childId).eq('chapter',2).maybeSingle();
+      if(error)throw error;
+      return data?.game_state||null;
+    },
     async getAssignment() {
       const childId = localStorage.getItem('ew-child-id');
       if (!childId || !configured) return null;

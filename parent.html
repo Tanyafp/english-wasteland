@@ -5,7 +5,7 @@
 *{box-sizing:border-box}body{font-family:system-ui,-apple-system,Arial,sans-serif;margin:0;background:radial-gradient(circle at 75% 0%,#244c38,transparent 42%),var(--bg);color:var(--text);padding:24px}main{max-width:1140px;margin:auto}h1{font-size:clamp(25px,4vw,40px);margin:5px 0 8px}.tag{color:var(--accent);letter-spacing:.18em;font-size:12px;font-weight:850;text-transform:uppercase}.sub{color:var(--muted);line-height:1.5;margin:0 0 22px}.columns{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}.panel{background:#14252aeF;border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px}.panel h2{font-size:18px;margin:0 0 12px}.toprow{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}.stat{padding:14px;background:#17332b;border:1px solid #456a55;border-radius:12px}.stat strong{display:block;font-size:24px;color:#d6f9c6}.stat small{color:var(--muted)}button,input,select{font:inherit}button{cursor:pointer;min-height:39px;padding:9px 14px;border-radius:9px;border:1px solid #62856b;background:#244536;color:#e8f7e3;font-weight:750}button.primary{background:var(--accent);color:#142817;border-color:#d8ffcb}button:hover{filter:brightness(1.12)}button:disabled{opacity:.5;cursor:default}input,select{min-width:0;max-width:100%;padding:11px;background:#081b1b;border:1px solid #63937a;border-radius:8px;color:white}input[type=checkbox]{accent-color:#a5eaa1;width:auto}.formrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}.formrow input{flex:1;min-width:150px}.muted{font-size:13px;color:var(--muted);line-height:1.5}.notice{color:#d4f6c2;border-left:3px solid #9bda92;background:#18382b;padding:10px 14px;margin:12px 0;border-radius:0 8px 8px 0;line-height:1.5}.error{border-left-color:#ffab91;color:#ffd6c6}.words{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.word{border:1px solid #3d6050;border-radius:9px;padding:10px;background:#102b24;font-size:13px}.word b{font-size:15px;color:var(--accent);display:block}.word small{display:block;color:var(--muted)}.word input{float:right}.tablewrap{overflow:auto}table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:left;padding:10px;border-bottom:1px solid #335348;white-space:nowrap}th{color:#c6dfc1}.good{color:#b8f89f}.warn{color:#f8d18a}.bad{color:#ffb3a5}.pill{border-radius:100px;padding:3px 8px;background:#31503b;font-size:12px;display:inline-block}.hidden{display:none}.footer{font-size:12px;color:#8ba99e;margin-top:12px}.note{white-space:pre-wrap;background:#0c2522;border:1px solid #35574c;padding:13px;border-radius:8px;font-size:13px;line-height:1.5;max-height:310px;overflow:auto}a{color:#bff7c1}.chip{color:var(--gold);font-size:13px}.warning{border-color:#795c42}
 @media(max-width:800px){.columns{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.words{grid-template-columns:repeat(2,1fr)}body{padding:12px}}
 </style></head><body>
-<main><div class="toprow"><div><div class="tag">English Wasteland · Family console</div><h1>📊 Кабинет родителя</h1><p class="sub">Ты видишь, что действительно усвоено, а что требует повторения.</p></div><a href="./index.html">Открыть игру ↗</a></div>
+<main><div class="toprow"><div><div class="tag">English Wasteland · Family console</div><h1>📊 Кабинет родителя</h1><p class="sub">Ты видишь, что действительно усвоено, а что требует повторения.</p></div><div><a href="./index.html">Глава 1 ↗</a> · <a href="./chapter2.html">Глава 2 ↗</a></div></div>
 <section class="panel"><h2>Откуда брать результаты?</h2>
 <p class="muted">Для автоматического сбора ответов войди в родительский кабинет ниже. Файлы вручную переносить не нужно.</p>
 <div class="formrow"><input id="jsonFile" type="file" accept=".json,application/json" aria-label="Загрузить отчёт"/><button id="readLocal">Прочитать с этого устройства</button></div>
@@ -26,11 +26,11 @@
 <section class="panel"><h2>Файлы и выгрузка</h2><div class="formrow"><button id="downloadCsv">Скачать все попытки CSV</button><button id="downloadJson">Скачать резервную копию JSON</button></div><p class="muted">Не размещай эти файлы в публичном репозитории: в них история обучения ребёнка.</p></section>
 </div></div>
 <p class="footer">Данные не отправляются в GitHub. Сайт статический, а доступ к персональному отчёту в облаке защищается входом и правилами доступа к базе (RLS).</p></main>
-<script src="config.js"></script><script src="cloud.js"></script><script>
+<script src="config.js"></script><script src="cloud.js"></script><script src="chapter2-data.js"></script><script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id), esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const WORDS={HELLO:'привет',ROBOT:'робот',KEY:'ключ',TAKE:'взять',DOOR:'дверь',OPEN:'открыть',WATER:'вода',YES:'да',NO:'нет',GO:'идти',THE:'артикль'};
-let attempts=[],profile={},child=null,db=null,planText='',learned=[],homeworks=[];
+const WORDS=window.EW2_DATA?.words||{HELLO:'привет',ROBOT:'робот',KEY:'ключ',TAKE:'взять',DOOR:'дверь',OPEN:'открыть',WATER:'вода',YES:'да',NO:'нет',GO:'идти',THE:'артикль'};
+let attempts=[],profile={},child=null,db=null,planText='',learned=[],homeworks=[],chapter2Stage=0,chapter2Homeworks=[];
 const setStatus=(id,text)=>$(id).textContent=text;
 function addWords(){
  $('assignmentWords').innerHTML=Object.entries(WORDS).filter(([w])=>w!=='THE').map(([w,r])=>`<label class="word"><input type="checkbox" value="${w}" class="wordCheck"/><b>${w}</b><small>${r}</small></label>`).join('');
@@ -46,18 +46,19 @@ function aggregate(){
 }
 function showReport(){
  const rows=aggregate(),hwa=attempts.filter(a=>a.kind==='homework');
- $('statStages').textContent=`${Math.min(Number(profile.stage)||0,10)}/10`;
+ $('statStages').textContent=`Г1 ${Math.min(Number(profile.stage)||0,10)}/10 · Г2 ${chapter2Stage}/48`;
  $('statAccuracy').textContent=hwa.length?`${Math.round(hwa.filter(a=>a.correct).length/hwa.length*100)}%`:'—';
- $('statHomework').textContent=String(homeworks.length);
+ $('statHomework').textContent=String(homeworks.length+chapter2Homeworks.length);
  $('statWeak').textContent=String(rows.filter(r=>r.status==='повторить').length);
  $('wordsTable').innerHTML=rows.length?rows.map(r=>`<tr><td><b>${esc(r.word)}</b></td><td>${esc(WORDS[r.word])}</td><td>${r.events}</td><td>${r.wrong}</td><td class="${r.status==='усвоено'?'good':r.status==='повторить'?'bad':'warn'}">${r.status}</td></tr>`).join(''):'<tr><td colspan="5">Нет изученных слов</td></tr>';
  const errors=attempts.filter(a=>!a.correct).slice().reverse().slice(0,14);
  $('errorsTable').innerHTML=errors.length?errors.map(a=>`<tr><td>${esc(new Date(a.at||a.created_at).toLocaleDateString('ru-RU'))}</td><td>${esc(a.kind)}</td><td>${esc(a.word)}</td><td>${esc(a.given??a.given_answer)}</td><td>${esc(a.expected??a.expected_answer)}</td></tr>`).join(''):'<tr><td colspan="5">Ошибок пока нет</td></tr>';
- $('homeworkSummary').innerHTML=homeworks.length?homeworks.slice().reverse().slice(0,8).map(h=>`<p>📝 ${esc(new Date(h.at).toLocaleDateString('ru-RU'))}: <b>${h.correct} / ${h.total}</b> (${Math.round(h.correct/h.total*100)}%)</p>`).join(''):`Домашних заданий ещё не было. ${hwa.length?'Есть отдельные попытки упражнений.':''}`;
+ const allHomeworks=homeworks.map(h=>({...h,chapter:1})).concat(chapter2Homeworks.map(h=>({...h,chapter:2}))).sort((a,b)=>new Date(b.at)-new Date(a.at));
+ $('homeworkSummary').innerHTML=allHomeworks.length?allHomeworks.slice(0,10).map(h=>`<p>📝 Глава ${h.chapter}: ${esc(new Date(h.at).toLocaleDateString('ru-RU'))}: <b>${h.correct} / ${h.total}</b> ${h.title?'— '+esc(h.title):''}</p>`).join(''):`Домашних заданий ещё не было. ${hwa.length?'Есть отдельные попытки упражнений.':''}`;
  const weak=rows.filter(r=>r.status==='повторить').map(r=>r.word);
  const learning=rows.filter(r=>r.status==='в процессе').map(r=>r.word);
  const priority=weak.length?weak:learning.slice(0,4);
- planText=`Глава 1: ${profile.stage||0} из 10 миссий. Домашних заданий: ${homeworks.length}.\nТребуют повторения: ${priority.join(', ')||'явных трудностей пока не выявлено'}.\nХорошо усвоены: ${rows.filter(r=>r.status==='усвоено').map(r=>r.word).join(', ')||'нужно больше ответов на самостоятельные задания'}.\n\nСоздай следующую главу English Wasteland для ребёнка с почти нулевым английским: повтори слова из списка трудных не менее 3 раз в новых игровых ситуациях, введи не более 4 новых слов, добавь задания на слух, распознавание и самостоятельный ввод без подсказки. Оценивай первый ответ и подсказки. Не перегружай: 15–20 минут игры + 5–8 минут ДЗ.`;
+ planText=`Глава 1: ${profile.stage||0} из 10 миссий. Домашних заданий: ${homeworks.length}.\nТребуют повторения: ${priority.join(', ')||'явных трудностей пока не выявлено'}.\nХорошо усвоены: ${rows.filter(r=>r.status==='усвоено').map(r=>r.word).join(', ')||'нужно больше ответов на самостоятельные задания'}.\n\nСоздай продолжение English Wasteland: глава 2 пройдена на ${chapter2Stage}/48. Повтори слова из списка трудных в новых игровых ситуациях, вводи по 6–8 новых слов за игровую зону, используй диалоги, слушание, распознавание, самостоятельный ввод и фразы без подсказки. Оценивай первый ответ и подсказки. Не перегружай: 15–20 минут игры + 5–8 минут ДЗ.`;
  $('recommendations').textContent=planText;
 }
 function fromReport(r){
@@ -95,9 +96,11 @@ async function fetchRemote(){
  let {data:children,error}=await db.from('children').select('*').eq('parent_id',user.id).order('created_at',{ascending:true});if(error)throw error;
  if(!children?.length){const create=await db.from('children').insert({parent_id:user.id,nickname:'Исследователь'}).select('*').single();if(create.error)throw create.error;children=[create.data]}
  child=children[0];$('pairBlock').classList.remove('hidden');$('pairCode').textContent=child.pair_code||'Устройство уже подключено';
- const [a,p]=await Promise.all([db.from('attempts').select('*').eq('child_id',child.id).order('created_at',{ascending:true}).limit(5000),db.from('progress').select('*').eq('child_id',child.id).maybeSingle()]);
- if(a.error)throw a.error;if(p.error)throw p.error;
+ const [a,p,c2]=await Promise.all([db.from('attempts').select('*').eq('child_id',child.id).order('created_at',{ascending:true}).limit(5000),db.from('progress').select('*').eq('child_id',child.id).maybeSingle(),db.from('chapter_progress').select('game_state').eq('child_id',child.id).eq('chapter',2).maybeSingle()]);
+ if(a.error)throw a.error;if(p.error)throw p.error;if(c2.error)throw c2.error;
  const r=p.data?.game_state||{};
+ const state2=c2.data?.game_state||{};
+ chapter2Stage=Number(state2.stage)||0;chapter2Homeworks=state2.homeworkHistory||[];
  fromReport({...r, attempts:a.data||[]});
  setStatus('authStatus','✓ Подключена семейная база. Загружено ответов: '+attempts.length+'.');
 }
