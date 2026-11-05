@@ -14,7 +14,7 @@
     if (clients.has(role)) return clients.get(role);
     const { createClient } = await getLib();
     const instance = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
-      auth: { storageKey: `ew-${role}-auth`, persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+      auth: { storageKey: `ew-${role}-auth`, persistSession: true, autoRefreshToken: true, detectSessionInUrl: role === 'parent' }
     });
     clients.set(role, instance);
     return instance;

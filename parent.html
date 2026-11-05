@@ -82,8 +82,9 @@ async function onAuth(){
 async function login(register){
  try{db=await getCloud();const email=$('email').value.trim(),password=$('password').value;
   if(!email||!password)throw Error('Заполни почту и пароль.');
-  const res=register?await db.auth.signUp({email,password}):await db.auth.signInWithPassword({email,password});if(res.error)throw res.error;
-  setStatus('authStatus',register?'Регистрация выполнена. Если включено подтверждение почты, открой письмо, затем войди.':'Вход выполнен.');
+  const res=register?await db.auth.signUp({email,password,options:{emailRedirectTo:'https://tanyafp.github.io/english-wasteland/parent.html'}}):await db.auth.signInWithPassword({email,password});if(res.error)throw res.error;
+  if(register&&!res.data?.session){setStatus('authStatus','Проверь почту и перейди по ссылке подтверждения. Если письмо уже подтвердило адрес, просто нажми «Войти» с этой почтой и паролем.');return}
+  setStatus('authStatus',register?'Регистрация завершена.':'Вход выполнен.');
   await fetchRemote();
  }catch(e){setStatus('authStatus','⚠ '+e.message)}
 }
