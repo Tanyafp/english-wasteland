@@ -1,0 +1,6 @@
+# Child's learning results must never be committed to a public repository.
+*report*.json
+*attempts*.csv
+*.local.js
+.env
+.env.*
