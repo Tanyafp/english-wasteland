@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#071b17">
+<title>English Wasteland — Глава 2: Сигнал с поверхности</title>
+<style>
+:root{color-scheme:dark;--bg:#07110f;--panel:#11251e;--panel2:#173126;--stroke:#365947;--green:#b2f3a0;--text:#eef9e8;--muted:#adc2b2;--gold:#ffd18a;--bad:#ffb0a2}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 20% 0%,#244e39 0,transparent 45%),radial-gradient(ellipse at 90% 45%,#182b30 0,transparent 50%),var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,'Segoe UI',Arial,sans-serif}
+button,input{font:inherit}button{cursor:pointer}button:disabled{opacity:.43;cursor:not-allowed}a{color:var(--green)}:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.wrap{max-width:1450px;margin:auto;padding:20px}
+header{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;font-weight:800;color:#97cfab}
+h1{margin:0;font-size:clamp(24px,3.3vw,38px);letter-spacing:.025em;line-height:1.16}
+h1 span{color:var(--green)}h2{font-size:22px;margin:0 0 10px}h3{font-size:16px;margin:0 0 8px}
+.sub{color:var(--muted);margin:4px 0 0;font-size:13px}.nav{display:flex;gap:10px;flex-wrap:wrap}
+.nav a{border:1px solid var(--stroke);border-radius:9px;padding:8px 12px;text-decoration:none;color:#e2f6de;background:#152f25}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
+.stat{border:1px solid #456d53;border-radius:12px;background:linear-gradient(160deg,#20432f,#10251f);padding:12px 15px}
+.stat b{font-size:23px;color:#defac9;display:block}.stat small{color:var(--muted);font-size:12px}
+.layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(280px,.88fr);gap:17px;align-items:start}
+.panel{border:1px solid var(--stroke);border-radius:15px;background:#10251fdf;padding:18px;margin-bottom:15px;box-shadow:0 15px 36px #0004}
+.label{font-size:11px;letter-spacing:.12em;font-weight:850;text-transform:uppercase;color:#98c9a3}
+.mission{border-color:#62856b;background:linear-gradient(180deg,#18392a,#10271f)}
+.missionhead{display:flex;gap:13px;align-items:center;justify-content:space-between}
+.progress{height:10px;background:#071b16;border:1px solid #466d54;border-radius:100px;overflow:hidden;margin:10px 0}
+.progress>div{height:100%;background:linear-gradient(90deg,#7ccf7a,#c5f8a6);width:0%;transition:width .25s}
+.scene{position:relative;min-height:245px;background:radial-gradient(ellipse at 50% 110%,#487a5696,transparent 60%),linear-gradient(160deg,#0a1918 0%,#172c2b 55%,#0a1817 100%);border:1px solid #43684e;border-radius:12px;overflow:hidden;padding:20px}
+.scene:before{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,#0002 0 1px,transparent 2px 7px)}
+.scene-header{position:relative;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px;color:#cdecc5;font-weight:800}
+.props{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:34px}
+.prop{min-height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid #65846a;background:linear-gradient(160deg,#254938,#102722);color:#e7f8e2;border-radius:12px;box-shadow:0 0 20px #8acd6720;gap:6px;transition:transform .15s}
+.prop:hover{transform:translateY(-3px);border-color:var(--green)}.prop span{font-size:30px}.prop small{font-size:12px}
+.story{color:#d8e9d4;line-height:1.7}.robot{border-left:3px solid var(--green);padding:9px 12px;margin:12px 0;background:#1c392a;border-radius:0 8px 8px 0;color:#e3f6dd}
+button.btn{border:1px solid #749976;color:var(--text);border-radius:10px;padding:10px 16px;background:#214736;font-weight:750;min-height:44px}
+button.primary{background:var(--green);color:#102215;border-color:#d3ffbb}
+button.secondary{background:#16332a}button.gold{border-color:var(--gold);color:var(--gold)}.controls{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0}
+.question{font-size:20px;font-weight:780;line-height:1.36;margin:12px 0}
+.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:10px}
+.choice{border:1px solid #638870;background:#19392d;border-radius:11px;min-height:61px;color:#edf9e7;padding:10px 12px;text-align:left;font-weight:760}
+.choice:hover{border-color:var(--green);background:#2c503c}
+.visual .choice{min-height:92px;font-size:18px;text-align:center}
+.listen{border:1px dashed #8aca97;border-radius:12px;padding:17px;text-align:center;margin:12px 0;background:#102b23}
+.answerfield{width:100%;border:1px solid #789b84;border-radius:9px;background:#081d1a;color:white;padding:12px 13px;text-transform:uppercase;font-weight:800;letter-spacing:.07em}
+.toklist{display:flex;gap:8px;flex-wrap:wrap;min-height:48px;padding:9px;border:1px dashed #719171;border-radius:9px;background:#0a1d19;margin:9px 0}
+.token{border:1px solid #90ab8a;border-radius:7px;background:#214b34;padding:8px 11px;color:#fff;font-weight:800}
+.token.used{opacity:.3}.built{color:#d6f8bf;min-height:24px;font-weight:800}
+.matches{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.matchcol{display:flex;flex-direction:column;gap:9px}.matchcol button{border:1px solid #698d70;border-radius:9px;background:#244134;color:white;min-height:49px;font-weight:800}.matchcol button.selected{background:#425f34;border-color:var(--gold)}.matchcol button.solved{background:#173c2a;border-color:#4e9f6b;color:#a7e4a3}
+.feedback{min-height:24px;font-weight:740;margin:12px 0;color:var(--muted)}.feedback.bad{color:var(--bad)}.feedback.good{color:var(--green)}
+.zonecard{border:1px solid #486b50;border-radius:10px;background:#122b23;padding:10px 12px;margin:8px 0;display:flex;align-items:center;gap:12px}
+.zonecard.current{border-color:var(--gold);background:#33412b}.zonecard.locked{opacity:.5}.zonecard b{display:block}.zonecard small{color:var(--muted)}
+.zoneicon{font-size:27px}.chip{display:inline-flex;padding:5px 9px;border:1px solid #557b59;border-radius:999px;margin:3px;background:#123126;color:#d6f6c6;font-weight:650;font-size:12px}
+.hwbtn{width:100%;text-align:left;margin:5px 0}.hwbtn:disabled{opacity:.45}
+small.help{color:var(--muted);font-size:12px}input.pair{width:100%;min-height:41px;border:1px solid #6b9478;border-radius:9px;background:#081c17;color:white;padding:10px;margin:8px 0}
+.notice{color:var(--gold);border-left:3px solid var(--gold);padding:10px;margin:12px 0;background:#292f1c}
+.modehead{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+hr{border:0;border-top:1px solid var(--stroke);margin:16px 0}
+#toast{position:fixed;right:15px;bottom:15px;z-index:5;background:#235338;padding:12px 17px;border:1px solid #b0eca6;border-radius:11px;box-shadow:0 10px 40px #0009;max-width:360px}
+.hidden{display:none!important}
+@media(max-width:850px){.layout{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{padding:12px}.props{margin-top:15px}}
+@media(max-width:500px){.choices{grid-template-columns:1fr}.props{grid-template-columns:repeat(2,1fr)}.scene{min-height:330px}.mission{padding:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+ <div><div class="eyebrow">VAULT 27 // chapter 02 // English with B.O.T.-7</div><h1>ENGLISH <span>WASTELAND</span></h1><p class="sub">Глава 2 · Сигнал с поверхности · 4 зоны, 48 миссий, 32 новых слова</p></div>
+ <nav class="nav"><a href="./index.html">← Глава 1</a><a href="./parent.html">📊 Родителю</a></nav>
+</header>
+<section class="stats">
+ <div class="stat"><b id="statStage">0/48</b><small>Сюжетные миссии</small></div>
+ <div class="stat"><b id="statXp">0 XP</b><small>Опыт главы</small></div>
+ <div class="stat"><b id="statCaps">0 ⬡</b><small>Крышечки</small></div>
+ <div class="stat"><b id="statWords">0</b><small>Изучено новых слов</small></div>
+</section>
+<div class="layout">
+<main>
+ <section class="panel mission">
+  <div class="missionhead"><div><div class="label" id="zoneLabel">Зона 01</div><h2 id="zoneTitle">Медотсек</h2></div><span id="zoneBadge" class="chip">БОТ-7 онлайн</span></div>
+  <div class="progress"><div id="bar"></div></div><div id="progressLabel" class="sub"></div>
+  <div class="scene" id="scene">
+   <div class="scene-header"><span id="sceneName">МЕДОТСЕК</span><span>● SYSTEM ONLINE</span></div>
+   <div class="props" id="props"></div>
+  </div>
+  <p id="zoneIntro" class="story"></p>
+ </section>
+ <section class="panel" id="taskBox" aria-live="polite"></section>
+</main>
+<aside>
+ <section class="panel"><h3>🗺️ Карта убежища</h3><div id="zones"></div><small class="help">Можно выйти в любой момент: продвижение и ошибки сохраняются.</small></section>
+ <section class="panel"><h3>📝 Закрепление и домашние задания</h3><p class="sub">После каждой зоны откроется проверка. За ошибки не штрафуем, но они попадают в учебный отчёт.</p><div id="hwPanel"></div></section>
+ <section class="panel"><h3>🎒 Рюкзак и словарь</h3><div id="bag"></div><hr><div id="vocabulary"></div></section>
+ <section class="panel"><h3>📡 Связь с кабинетом родителя</h3><p class="sub" id="syncStatus">Проверяем подключение…</p><div class="controls"><button class="btn secondary" id="syncBtn">↻ Отправить результаты</button></div><details><summary style="cursor:pointer;color:#b9e4a9">Подключить по коду родителя</summary><p class="sub">Нужно только один раз, если игра ещё не была подключена на этом устройстве.</p><input class="pair" id="pairCode" placeholder="Код подключения" maxlength="32" autocomplete="off"><button class="btn primary" id="pairBtn">Подключить</button></details></section>
+</aside>
+</div>
+<footer class="sub">Без боёв и пугающих сцен. Русский используется для поддержки; постепенно английских подсказок станет больше. Озвучка зависит от голосов, установленных в браузере.</footer>
+</div>
+<div id="toast" class="hidden" role="status"></div>
+<script src="./config.js"></script><script src="./cloud.js"></script>
+<script src="./chapter2-data.js"></script><script src="./chapter2-engine.js"></script>
+</body></html>
