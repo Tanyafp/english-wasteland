@@ -345,7 +345,7 @@ function renderParent(){
  $("parentDays").textContent=done.length;$("parentMinutes").textContent=total;$("parentErrors").textContent=state.history.filter(a=>!a.ok).length;
  $("lessonSelect").innerHTML=LESSONS.map(l=>'<option value="'+l.id+'" '+(state.assigned===l.id?"selected":"")+'>'+escapeHtml(l.title)+" · "+escapeHtml(l.level)+"</option>").join("");
  $("extraWords").value=(state.extraWordsByLesson[state.assigned]||[]).map(p=>p[0]+" = "+p[1]).join("\n");
- $("parentWords").innerHTML='<div class="table-scroll"><table><thead><tr><th>Слово</th><th>Верных подряд</th><th>Ошибок</th></tr></thead><tbody>'+words().map(w=>'<tr><td>'+escapeHtml(w[0])+'</td><td>'+(session().streak[w[0]]||0)+'/3</td><td>'+state.history.filter(a=>a.type==="words"&&a.lessonId===lesson().id&&a.prompt===w[0]&&!a.ok).length+'</td></tr>').join("")+'</tbody></table></div>';
+ $("parentWords").innerHTML='<div class="table-scroll"><table><thead><tr><th>Слово</th><th>Перевод выбран</th><th>Ошибок</th></tr></thead><tbody>'+words().map(w=>'<tr><td>'+escapeHtml(w[0])+'</td><td>'+(session().wordDone[w[0]]?'✓':'—')+'</td><td>'+state.history.filter(a=>a.type==="words"&&a.lessonId===lesson().id&&a.prompt===w[0]&&!a.ok).length+'</td></tr>').join("")+'</tbody></table></div>';
  $("attemptRows").innerHTML=state.history.slice(-90).reverse().map(a=>'<tr><td>'+escapeHtml(new Date(a.at).toLocaleString("ru-RU"))+'</td><td>'+escapeHtml(a.type)+'</td><td>'+escapeHtml(a.prompt).slice(0,110)+'</td><td>'+escapeHtml(a.answer).slice(0,100)+'</td><td style="color:'+(a.ok?"#1d7654":"#b33d41")+'">'+(a.ok?"Верно":"Ошибка")+'</td></tr>').join("")||'<tr><td colspan="5">Пока нет ответов</td></tr>';
 }
 $("pinButton").onclick=async()=>{
