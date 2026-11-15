@@ -6,3 +6,29 @@
 .source-text summary{cursor:pointer;color:var(--accent);font-weight:700}
 .source-text .reading{margin-top:12px;font-size:16px}
 .voice-status{background:#f4f7fb;padding:10px 12px;border-radius:9px;line-height:1.5}
+
+/* Lesson sections can be explored in any order; progress is based on completed work. */
+.section-nav{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 4px}
+.section-nav button{font-size:13px;padding:9px 12px;border-radius:11px;background:#f8faff;text-align:left}
+.section-nav button.active{background:#2159a8;border-color:#2159a8;color:white}
+.section-nav button.done:not(.active){background:#e6f7ee;border-color:#b6e4ce;color:#155c3f}
+.study-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(265px,.85fr);gap:15px;align-items:start}
+.study-grid .pane{margin:14px 0}
+.reference{position:sticky;top:12px;max-height:75vh;overflow:auto;background:#f8fbff;border:1px solid #c9d9ed;border-radius:15px;margin-top:14px;padding:16px}
+.reference h3{font-size:17px;margin:6px 0}
+.reference .reading{font-size:15px;line-height:1.8;padding:13px}
+.reference .refwords{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:8px 0}
+.reference .refword{background:white;border:1px solid #d9e3f0;border-radius:9px;padding:6px 9px;font-size:12px}
+.reference .refword b{display:block;font-size:13px}
+.flash-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin:16px 0}
+.flashcard{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:146px;border:1px solid #a9c4e6;border-radius:16px;background:#edf5ff;padding:14px;text-align:center;box-shadow:0 5px 13px #2d5c9210;transition:transform .12s}
+.flashcard:hover{transform:translateY(-2px)}
+.flashcard.flipped{background:#eaf8f1;border-color:#a7d9c0}
+.flashcard .flash-main{font-size:20px;font-weight:780;line-height:1.25}
+.flashcard .flash-hint{font-size:12px;font-weight:400;color:#58728e;margin-top:7px}
+.flashcard .flash-check{font-size:12px;color:#177452;margin-top:9px}
+.mini-help{background:#fff9ea;border:1px solid #f0d9a3;border-radius:10px;padding:11px 14px}
+.section-complete{padding:22px;border:1px solid #a7dbc7;border-radius:14px;background:#effbf4}
+.option.correct-choice{border-color:#68b595;background:#ecf9f1}
+@media(max-width:850px){.study-grid{grid-template-columns:1fr}.reference{position:static;max-height:none;order:-1}.reference .reading{max-height:260px;overflow:auto}.flash-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:460px){.flash-grid{grid-template-columns:1fr 1fr;gap:8px}.flashcard{min-height:125px;padding:10px}.flashcard .flash-main{font-size:17px}.reference .refwords{grid-template-columns:1fr 1fr}.section-nav{gap:6px}.section-nav button{padding:8px;font-size:12px}}
