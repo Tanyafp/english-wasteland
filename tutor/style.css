@@ -32,3 +32,14 @@
 .option.correct-choice{border-color:#68b595;background:#ecf9f1}
 @media(max-width:850px){.study-grid{grid-template-columns:1fr}.reference{position:static;max-height:none;order:-1}.reference .reading{max-height:260px;overflow:auto}.flash-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:460px){.flash-grid{grid-template-columns:1fr 1fr;gap:8px}.flashcard{min-height:125px;padding:10px}.flashcard .flash-main{font-size:17px}.reference .refwords{grid-template-columns:1fr 1fr}.section-nav{gap:6px}.section-nav button{padding:8px;font-size:12px}}
+
+.task-picker{margin:14px 0 17px;padding:12px;border:1px solid #d9e4f0;border-radius:13px;background:#f9fbff}
+.task-picker p{margin:0 0 9px}
+.task-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;max-height:230px;overflow:auto}
+.task-grid button{display:flex;gap:9px;align-items:flex-start;text-align:left;font-size:12px;line-height:1.35;padding:9px;background:white;border-radius:9px;min-height:43px;font-weight:550}
+.task-grid button span:first-child{flex:0 0 auto;font-weight:800;color:#2d5ea3}
+.task-grid button.selected{background:#e9f3ff;border-color:#5b8bca}
+.task-grid button.done{background:#effaf4;border-color:#b7dec7}
+.task-grid button.done span:first-child{color:#20805c}
+.task-grid button:disabled{opacity:.7}
+@media(max-width:560px){.task-grid{grid-template-columns:1fr}}
