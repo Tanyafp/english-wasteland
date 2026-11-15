@@ -36,26 +36,63 @@ function updateStats(){
 }
 function changeStage(stage){session().stage=stage;save();render()}
 function textInput(placeholder){return '<div class="control"><input id="answerInput" type="text" autocomplete="off" spellcheck="false" placeholder="'+escapeHtml(placeholder)+'"><button id="submitAnswer" class="primary">Проверить</button></div>'}
-function inputWire(fn,voiceLang=null){
-  $("submitAnswer")?.addEventListener("click",()=>fn($("answerInput").value));
-  $("answerInput")?.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();fn(e.target.value)}});
-  if(voiceLang){
-    const b=document.createElement("button");b.type="button";b.textContent="🎤 Ответить голосом";
-    $("submitAnswer").parentElement.appendChild(b);
-    b.onclick=()=>{
-      const Engine=window.SpeechRecognition||window.webkitSpeechRecognition;
-      if(!Engine){note("Распознавание речи недоступно. Ответь письменно.",true);return}
-      try{
-        const r=new Engine();r.lang=voiceLang;r.continuous=false;r.interimResults=false;
-        b.disabled=true;b.textContent="Слушаю…";
-        r.onresult=e=>{const transcript=e.results[0][0].transcript;$("answerInput").value=transcript;lastAction=Date.now();fn(transcript)};
-        r.onerror=e=>{note("Микрофон: "+e.error+". Можно ответить письменно.",true)};
-        r.onend=()=>{if(b.isConnected){b.disabled=false;b.textContent="🎤 Ответить голосом"}};
-        r.start();
-      }catch(e){note("Не удалось включить микрофон: "+e.message,true)}
+function inputWire(fn,voiceLang="en-US"){
+ const input=$("answerInput"),submit=$("submitAnswer");
+ submit?.addEventListener("click",()=>fn(input.value));
+ input?.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();fn(input.value)}});
+ if(voiceLang&&submit&&input){
+  const mic=document.createElement("button");
+  mic.type="button";mic.textContent="🎤 Ответить голосом";
+  submit.parentElement.appendChild(mic);
+  const status=document.createElement("p");
+  status.className="small muted voice-status";
+  status.setAttribute("role","status");
+  status.textContent="После голосового ввода проверь распознанный текст и нажми «Проверить».";
+  submit.parentElement.insertAdjacentElement("afterend",status);
+  mic.onclick=()=>{
+   const Engine=window.SpeechRecognition||window.webkitSpeechRecognition;
+   if(!Engine){status.textContent="Распознавание недоступно. Попробуй Chrome или ответь текстом.";return}
+   try{
+    if(recognition){try{recognition.abort()}catch{}recognition=null}
+    const r=new Engine();recognition=r;
+    r.lang=voiceLang;r.continuous=false;r.interimResults=false;r.maxAlternatives=3;
+    mic.disabled=true;mic.textContent="🎤 Слушаю…";
+    status.textContent="Говори. Ответ ещё не проверяется.";
+    let heard=false,problem="";
+    r.onresult=e=>{
+     if(!e.results?.length)return;
+     const transcript=e.results[0][0].transcript;
+     if(!transcript)return;
+     heard=true;input.value=transcript;lastAction=Date.now();
+     status.textContent="Микрофон услышал: «"+transcript+"». Если неверно — исправь текст или повтори голосом. Только после этого нажми «Проверить».";
+     input.focus();
     };
-  }
-  $("answerInput")?.focus();
+    r.onerror=e=>{
+     const explanations={"not-allowed":"Доступ к микрофону запрещён. Разреши его для этого сайта в браузере.","service-not-allowed":"Распознавание недоступно.","network":"Нет связи с сервисом распознавания. Проверь интернет.","audio-capture":"Браузер не видит микрофон.","no-speech":"Речь не распознана."};
+     problem=explanations[e.error]||"Ошибка: "+e.error;
+     status.textContent=problem+" Ошибкой в уроке это не считается.";
+    };
+    r.onend=()=>{
+     if(recognition===r)recognition=null;
+     if(mic.isConnected){mic.disabled=false;mic.textContent="🎤 Ответить голосом"}
+     if(!heard&&!problem&&status.isConnected)status.textContent="Ничего не распознано. Попробуй ещё раз без штрафа.";
+    };
+    r.start();
+   }catch(e){recognition=null;mic.disabled=false;mic.textContent="🎤 Ответить голосом";status.textContent="Микрофон не запустился: "+e.message+". Попробуй ещё раз."}
+  };
+ }
+ input?.focus();
+}
+function maskedExample(en){
+ const sentences=lesson().text.match(/[^.!?]+[.!?]?/g)||[];
+ const literal=en.replace(/[-\/\\^$*+?.()|[\]{}]/g,"\\$&");
+ const re=new RegExp("\\b"+literal+"\\b","i");
+ const sentence=sentences.find(s=>re.test(s));
+ return sentence?'<div class="example"><span class="eyebrow">Контекст из текста урока</span><p>'+escapeHtml(sentence.trim().replace(re,"______"))+'</p></div>':
+  '<p class="small muted">Слово из словаря урока. При необходимости открой текст ниже.</p>';
+}
+function sourceTextToggle(){
+ return '<details class="source-text"><summary>📖 Открыть текст урока</summary><div class="reading">'+escapeHtml(lesson().text)+'</div></details>';
 }
 function nextWordIndex(){let w=words(),s=session();for(let z=0;z<w.length;z++){let i=(s.wordCursor+z)%w.length;if((s.streak[w[i][0]]||0)<3)return i}return -1}
 function readingScore(transcript,text){
@@ -82,7 +119,7 @@ function renderReading(){
     recognition.onerror=e=>{$("readHelp").textContent="Микрофон: "+e.error+". Можно попробовать ещё раз."};
     recognition.onend=()=>{
       recognition=null;
-      if(buffer.trim()){const report=readingScore(buffer,L.text);s.spoken=true;s.spokenMode="recognized";s.readCoverage=report.percent;record("reading",L.title,buffer,"Текст урока",report.percent>=75);save();render();note("Распознано примерно "+report.percent+"% слов текста. Это не оценка фонетики.")}
+      if(buffer.trim()){const report=readingScore(buffer,L.text);s.spoken=true;s.spokenMode="recognized";s.readCoverage=report.percent;save();render();note("Микрофон распознал примерно "+report.percent+"% слов текста. Это приблизительный результат распознавания, не оценка произношения и не ошибка в уроке.")}
       else {render();note("Речь не распознана. Попробуй снова или воспользуйся ручной отметкой.",true)}
     };
     recognition.start();
@@ -121,7 +158,7 @@ function render(){
   let [en,ru]=w[i],level=s.streak[en]||0,mode=level%3;
   let prompt=mode===0?en:ru;
   let label=mode===0?"Переведи на русский":mode===1?"Напиши английское слово по памяти":"Проверка написания: снова напиши по-английски";
-  el.innerHTML='<div class="eyebrow">Тренировка памяти · '+mastered()+'/'+w.length+' слов полностью закреплено</div><p>'+label+'</p><div class="word">'+escapeHtml(prompt)+'</div>'+textInput(mode===0?"Перевод на русском":"Английский без подсказки")+'<p class="small muted">Для освоения нужно три правильных ответа подряд. При ошибке серия этого слова начинается сначала.</p>';
+  el.innerHTML='<div class="eyebrow">Тренировка памяти · '+mastered()+'/'+w.length+' слов полностью закреплено</div><p>'+label+'</p><div class="word">'+escapeHtml(prompt)+'</div>'+maskedExample(en)+textInput(mode===0?"Перевод на русском":"Напиши слово по-английски")+sourceTextToggle()+'<p class="small muted">Для освоения нужно три правильных ответа подряд. Проверь текст, распознанный микрофоном, перед отправкой.</p>';
   inputWire(answer=>{
    if(!answer.trim())return;
    let expected=mode===0?ru:en,ok=equals(answer,expected);
@@ -129,12 +166,12 @@ function render(){
    s.streak[en]=ok?level+1:0;
    s.wordCursor=(i+1)%w.length;save();render();
    note(ok?"Верно! Серия: "+s.streak[en]+" из 3.":"Пока неверно. Правильно: "+expected+". Слово вернётся позже.",!ok);
-  },mode===0?"ru-RU":mode===1?"en-US":null);
+  },mode===0?"ru-RU":"en-US");
  }else if(s.stage==="final"){
   let subset=w.slice(0,Math.min(5,w.length));
   if(s.finalIndex>=subset.length){changeStage("review");return}
   let p=subset[s.finalIndex];
-  el.innerHTML='<div class="eyebrow">Итоговая проверка · '+(s.finalIndex+1)+'/'+subset.length+'</div><p class="muted">Подсказок не будет. Напиши перевод с русского на английский.</p><div class="word">'+escapeHtml(p[1])+'</div>'+textInput("Английский перевод");
+  el.innerHTML='<div class="eyebrow">Итоговая проверка · '+(s.finalIndex+1)+'/'+subset.length+'</div><p class="muted">Вспомни английское слово по значению и контексту.</p><div class="word">'+escapeHtml(p[1])+'</div>'+maskedExample(p[0])+textInput("Английское слово")+sourceTextToggle();
   inputWire(ans=>{
    if(!ans.trim())return;
    let ok=equals(ans,p[0]);record("final",p[0],ans,p[0],ok);
@@ -142,7 +179,7 @@ function render(){
   });
  }else if(s.stage==="review"){
   let p=w[s.reviewIndex%w.length];
-  el.innerHTML='<div class="eyebrow">Закрепление до 30 минут</div><p class="muted">Основные задания выполнены. Чтобы закрепить материал, повтори слова по памяти. Осталось активного времени: '+activeTime(Math.max(0,DAY_MS-s.active))+'.</p><div class="word">'+escapeHtml(p[1])+'</div>'+textInput("Напиши по-английски")+'<p class="small muted">Нужно выполнить не менее трёх правильных проверок на этом этапе.</p>';
+  el.innerHTML='<div class="eyebrow">Закрепление до 30 минут</div><p class="muted">Основные задания выполнены. Осталось активного времени: '+activeTime(Math.max(0,DAY_MS-s.active))+'.</p><div class="word">'+escapeHtml(p[1])+'</div>'+maskedExample(p[0])+textInput("Напиши по-английски")+sourceTextToggle()+'<p class="small muted">Нужно выполнить три правильные проверки.</p>';
   inputWire(ans=>{
     if(!ans.trim())return;
     let ok=equals(ans,p[0]);record("review",p[0],ans,p[0],ok);
