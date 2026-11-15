@@ -140,7 +140,7 @@ function maskedExample(en){
 function sourceTextToggle(){
  return '<details class="source-text"><summary>📖 Открыть текст урока</summary><div class="reading">'+escapeHtml(lesson().text)+'</div></details>';
 }
-function nextWordIndex(){let w=words(),s=session();for(let z=0;z<w.length;z++){let i=(s.wordCursor+z)%w.length;if((s.streak[w[i][0]]||0)<3)return i}return -1}
+function nextWordIndex(){let w=words(),s=session();for(let z=0;z<w.length;z++){let i=((s.wordCursor||0)+z)%w.length;if(!s.wordDone[w[i][0]])return i}return -1}
 function readingScore(transcript,text){
  let original=norm(text).split(" ").filter(Boolean),spoken=norm(transcript).split(" ").filter(Boolean);
  // A subsequence match preserves order; it measures recognized coverage, not phoneme quality.
@@ -163,8 +163,11 @@ function renderReading(){
     $("readHelp").textContent="Читай вслух в обычном темпе. Нажми «Остановить запись», когда закончишь.";
     recognition.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)buffer+=" "+e.results[i][0].transcript}lastAction=Date.now()};
     recognition.onerror=e=>{$("readHelp").textContent="Микрофон: "+e.error+". Можно попробовать ещё раз."};
+    const activeRecognition=recognition;
     recognition.onend=()=>{
+      if(recognition!==activeRecognition)return;
       recognition=null;
+      if(s.stage!=="reading")return;
       if(buffer.trim()){const report=readingScore(buffer,L.text);s.spoken=true;s.spokenMode="recognized";s.readCoverage=report.percent;save();render();note("Микрофон распознал примерно "+report.percent+"% слов текста. Это приблизительный результат распознавания, не оценка произношения и не ошибка в уроке.")}
       else {render();note("Речь не распознана. Попробуй снова или воспользуйся ручной отметкой.",true)}
     };
@@ -191,33 +194,34 @@ function render(){
   wireNextSection();
  }else if(s.stage==="reading"){renderReading()}
  else if(s.stage==="understand"){
-  if(s.compIndex>=L.questions.length){changeStage("grammar");return}
+  if(s.compIndex>=L.questions.length){el.innerHTML=sectionFinished("Все вопросы по тексту решены. Можешь вернуться и перечитать историю.");wireNextSection();return}
   let q=L.questions[s.compIndex];
   el.innerHTML='<div class="eyebrow">Понимание текста · '+(s.compIndex+1)+'/'+L.questions.length+'</div><p>Ответь по-английски, опираясь на прочитанный текст.</p><p class="task">'+escapeHtml(q[0])+'</p>'+q[2].map(ans=>'<button class="option" data-choice="'+escapeHtml(ans)+'">'+escapeHtml(ans)+'</button>').join('')+'<details><summary>Посмотреть текст ещё раз</summary><p>'+escapeHtml(L.text)+'</p></details>';
   el.querySelectorAll("[data-choice]").forEach(b=>b.onclick=()=>{let ok=equals(b.dataset.choice,q[1]);record("understand",q[0],b.dataset.choice,q[1],ok);if(ok){s.compIndex++;save();render();note("Верно! Ты нашёл ответ в тексте.")}else note("Не совсем. Найди нужную часть текста и попробуй ещё раз.",true)});
  }else if(s.stage==="grammar"){
-  if(s.gramIndex>=L.grammar.length){changeStage("words");return}
+  if(s.gramIndex>=L.grammar.length){el.innerHTML=sectionFinished("Все упражнения по грамматике решены.");wireNextSection();return}
   let q=L.grammar[s.gramIndex];
   el.innerHTML='<div class="eyebrow">Грамматика · '+(s.gramIndex+1)+'/'+L.grammar.length+'</div><p class="muted">Тема: '+escapeHtml(L.topic)+'</p><p class="task">'+escapeHtml(q[0])+'</p>'+textInput("Впиши пропущенное слово");
   inputWire(answer=>{if(!answer.trim())return;let ok=equals(answer,q[2]);record("grammar",q[0],answer,q[1],ok);if(ok){s.gramIndex++;save();render();note("Правильно.")}else note("Повтори правило. Правильный вариант: "+q[1]+". Теперь введи его самостоятельно.",true)});
  }else if(s.stage==="words"){
   let i=nextWordIndex();
-  if(i<0){changeStage("final");return}
-  let [en,ru]=w[i],level=s.streak[en]||0,mode=level%3;
-  let prompt=mode===0?en:ru;
-  let label=mode===0?"Переведи на русский":mode===1?"Напиши английское слово по памяти":"Проверка написания: снова напиши по-английски";
-  el.innerHTML='<div class="eyebrow">Тренировка памяти · '+mastered()+'/'+w.length+' слов полностью закреплено</div><p>'+label+'</p><div class="word">'+escapeHtml(prompt)+'</div>'+maskedExample(en)+textInput(mode===0?"Перевод на русском":"Напиши слово по-английски")+sourceTextToggle()+'<p class="small muted">Для освоения нужно три правильных ответа подряд. Проверь текст, распознанный микрофоном, перед отправкой.</p>';
-  inputWire(answer=>{
-   if(!answer.trim())return;
-   let expected=mode===0?ru:en,ok=equals(answer,expected);
-   record("words",en,answer,expected,ok);
-   s.streak[en]=ok?level+1:0;
+  if(i<0){el.innerHTML=sectionFinished("Все слова выбраны правильно. Если ошибался, слово возвращалось до правильного ответа.");wireNextSection();return}
+  let [en,ru]=w[i];
+  const possible=w.filter((p,j)=>j!==i).map(p=>p[1]);
+  const rotated=possible.slice(i%possible.length).concat(possible.slice(0,i%possible.length));
+  const options=rotated.slice(0,3);
+  options.splice(i%4,0,ru);
+  el.innerHTML='<div class="eyebrow">Выбери перевод · '+mastered()+'/'+w.length+' слов проверено</div><p>Сначала просто узнай значение. Не надо сразу писать слово по памяти — для этого позже будет отдельное упражнение.</p><div class="word">'+escapeHtml(en)+'</div>'+maskedExample(en)+options.map(v=>'<button type="button" class="option" data-word-option="'+escapeHtml(v)+'">'+escapeHtml(v)+'</button>').join("")+'<p class="small muted">Если ошибёшься, слово вернётся позже. Можешь подсмотреть в карточки или текст.</p>';
+  el.querySelectorAll("[data-word-option]").forEach(b=>b.onclick=()=>{
+   const given=b.dataset.wordOption,ok=equals(given,ru);
+   record("words",en,given,ru,ok);
+   if(ok){s.wordDone[en]=true;s.streak[en]=Math.max(s.streak[en]||0,1)}
    s.wordCursor=(i+1)%w.length;save();render();
-   note(ok?"Верно! Серия: "+s.streak[en]+" из 3.":"Пока неверно. Правильно: "+expected+". Слово вернётся позже.",!ok);
-  },mode===0?"ru-RU":"en-US");
+   note(ok?"Верно! Ты узнал значение слова.":"Пока нет. Правильно: "+ru+". Посмотри текст и карточки — это слово ещё вернётся.",!ok);
+  });
  }else if(s.stage==="final"){
   let subset=w.slice(0,Math.min(5,w.length));
-  if(s.finalIndex>=subset.length){changeStage("review");return}
+  if(s.finalIndex>=subset.length){el.innerHTML=sectionFinished("Письменная проверка завершена. Ошибки остались в истории, но ты их исправил.");wireNextSection();return}
   let p=subset[s.finalIndex];
   el.innerHTML='<div class="eyebrow">Итоговая проверка · '+(s.finalIndex+1)+'/'+subset.length+'</div><p class="muted">Вспомни английское слово по значению и контексту.</p><div class="word">'+escapeHtml(p[1])+'</div>'+maskedExample(p[0])+textInput("Английское слово")+sourceTextToggle();
   inputWire(ans=>{
@@ -226,6 +230,7 @@ function render(){
    if(ok){s.finalIndex++;save();render();note("Правильно!")}else note("Неверно. Вернись к слову и попробуй ещё раз.",true);
   });
  }else if(s.stage==="review"){
+  if(s.reviewCorrect>=3){el.innerHTML=sectionFinished("Три задания на закрепление выполнены. Если 30 минут ещё не прошло, повторяй карточки или читай текст; время продолжит учитываться при активной работе.");wireNextSection();return}
   let p=w[s.reviewIndex%w.length];
   el.innerHTML='<div class="eyebrow">Закрепление до 30 минут</div><p class="muted">Основные задания выполнены. Осталось активного времени: '+activeTime(Math.max(0,DAY_MS-s.active))+'.</p><div class="word">'+escapeHtml(p[1])+'</div>'+maskedExample(p[0])+textInput("Напиши по-английски")+sourceTextToggle()+'<p class="small muted">Нужно выполнить три правильные проверки.</p>';
   inputWire(ans=>{
@@ -253,7 +258,7 @@ function tick(){
  if(document.visibilityState==="visible"&&document.hasFocus()&&(Date.now()-lastAction)<90000){
   let s=session();if(!s.complete){s.active+=1;if(Date.now()-lastSave>9000)save()}
  }
- updateStats();
+ updateStats();tryComplete();
 }
 for(const evt of ["pointerdown","keydown","scroll"]){document.addEventListener(evt,()=>{lastAction=Date.now()},{passive:true})}
 document.addEventListener("visibilitychange",()=>{lastAction=Date.now();save()});
