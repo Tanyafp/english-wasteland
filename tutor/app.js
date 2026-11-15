@@ -26,7 +26,17 @@ function session(){
  const key=today()+"|"+lesson().id;
  if(!state.sessions[key]){state.sessions[key]=newSession();save()}
  const s=state.sessions[key];
- s.streak=s.streak||{};s.cardSeen=s.cardSeen||{};s.cardOpen=s.cardOpen||{};s.wordDone=s.wordDone||{};
+  s.streak=s.streak||{};s.cardSeen=s.cardSeen||{};s.cardOpen=s.cardOpen||{};s.wordDone=s.wordDone||{};
+ s.compDone=s.compDone||{};s.gramDone=s.gramDone||{};s.finalDone=s.finalDone||{};
+ if(!s.taskMigrationDone){
+  for(let i=0;i<(s.compIndex||0);i++)s.compDone[i]=true;
+  for(let i=0;i<(s.gramIndex||0);i++)s.gramDone[i]=true;
+  for(let i=0;i<(s.finalIndex||0);i++)s.finalDone[i]=true;
+  s.compCursor=Math.min(s.compIndex||0,lesson().questions.length-1);
+  s.gramCursor=Math.min(s.gramIndex||0,lesson().grammar.length-1);
+  s.finalCursor=Math.min(s.finalIndex||0,Math.min(5,words().length)-1);
+  s.taskMigrationDone=true;save();
+ }
  // Keep progress earned in the previous linear version.
  if(!s.cardMigrationDone){if(s.studyIndex>=words().length)words().forEach(p=>s.cardSeen[p[0]]=true);s.cardMigrationDone=true;save()}
  if(!s.wordMigrationDone){words().forEach(p=>{if((s.streak[p[0]]||0)>=3)s.wordDone[p[0]]=true});s.wordMigrationDone=true;save()}
@@ -39,10 +49,10 @@ function isDone(stage,s=session()){
  switch(stage){
   case "study":return w.every(p=>!!s.cardSeen[p[0]]);
   case "reading":return !!s.spoken;
-  case "understand":return (s.compIndex||0)>=L.questions.length;
-  case "grammar":return (s.gramIndex||0)>=L.grammar.length;
+  case "understand":return L.questions.every((q,i)=>!!s.compDone[i]);
+  case "grammar":return L.grammar.every((q,i)=>!!s.gramDone[i]);
   case "words":return w.every(p=>!!s.wordDone[p[0]]);
-  case "final":return (s.finalIndex||0)>=Math.min(5,w.length);
+  case "final":return w.slice(0,5).every((p,i)=>!!s.finalDone[i]);
   case "review":return (s.reviewCorrect||0)>=3;
  }
  return false;
@@ -129,6 +139,30 @@ function inputWire(fn,voiceLang="en-US"){
  }
  input?.focus();
 }
+function questionPicker(items,completed,current){
+ return '<div class="task-picker"><p class="small muted">Все задания раздела — выбирай любое:</p><div class="task-grid">'+items.map((t,i)=>
+  '<button type="button" data-task-index="'+i+'" class="'+(completed[i]?"done ":"")+(i===current?"selected":"")+'"><span>'+(completed[i]?"✓ ":"○ ")+(i+1)+'</span><span>'+escapeHtml(t)+'</span></button>'
+ ).join("")+'</div></div>';
+}
+function wireQuestionPicker(field){
+ $("taskArea").querySelectorAll("[data-task-index]").forEach(b=>b.onclick=()=>{
+  session()[field]=Number(b.dataset.taskIndex);save();render();
+ });
+}
+function nextQuestion(current,count,done){
+ for(let z=1;z<=count;z++){const i=(current+z)%count;if(!done[i])return i}
+ return current;
+}
+function wordPicker(w,done,current){
+ return '<div class="task-picker"><p class="small muted">Можно выбрать любое слово:</p><div class="task-grid">'+w.map((p,i)=>
+  '<button type="button" data-word-pick="'+i+'" '+(done[p[0]]?"disabled":"")+' class="'+(done[p[0]]?"done ":"")+(i===current?"selected":"")+'"><span>'+(done[p[0]]?"✓ ":"○ ")+'</span><span>'+escapeHtml(p[0])+'</span></button>'
+ ).join("")+'</div></div>';
+}
+function wireWordPicker(){
+ $("taskArea").querySelectorAll("[data-word-pick]").forEach(b=>b.onclick=()=>{
+  session().wordCursor=Number(b.dataset.wordPick);save();render();
+ });
+}
 function maskedExample(en){
  const sentences=lesson().text.match(/[^.!?]+[.!?]?/g)||[];
  const literal=en.replace(/[-\/\\^$*+?.()|[\]{}]/g,"\\$&");
@@ -194,24 +228,49 @@ function render(){
   wireNextSection();
  }else if(s.stage==="reading"){renderReading()}
  else if(s.stage==="understand"){
-  if(s.compIndex>=L.questions.length){el.innerHTML=sectionFinished("Все вопросы по тексту решены. Можешь вернуться и перечитать историю.");wireNextSection();return}
-  let q=L.questions[s.compIndex];
-  el.innerHTML='<div class="eyebrow">Понимание текста · '+(s.compIndex+1)+'/'+L.questions.length+'</div><p>Ответь по-английски, опираясь на прочитанный текст.</p><p class="task">'+escapeHtml(q[0])+'</p>'+q[2].map(ans=>'<button class="option" data-choice="'+escapeHtml(ans)+'">'+escapeHtml(ans)+'</button>').join('')+'<details><summary>Посмотреть текст ещё раз</summary><p>'+escapeHtml(L.text)+'</p></details>';
-  el.querySelectorAll("[data-choice]").forEach(b=>b.onclick=()=>{let ok=equals(b.dataset.choice,q[1]);record("understand",q[0],b.dataset.choice,q[1],ok);if(ok){s.compIndex++;save();render();note("Верно! Ты нашёл ответ в тексте.")}else note("Не совсем. Найди нужную часть текста и попробуй ещё раз.",true)});
+  const n=L.questions.length;
+  const current=Math.min(s.compCursor||0,n-1),q=L.questions[current];
+  const picker=questionPicker(L.questions.map(q=>q[0]),s.compDone,current);
+  if(isDone("understand")){
+   el.innerHTML=sectionFinished("Все вопросы по тексту решены. Можно повторить любой из них.")+picker;
+   wireNextSection();wireQuestionPicker("compCursor");return;
+  }
+  el.innerHTML='<div class="eyebrow">Понимание текста · '+Object.values(s.compDone).filter(Boolean).length+'/'+n+' готово</div>'+picker+
+   '<p>Ответь по-английски, опираясь на прочитанный текст.</p><p class="task">'+escapeHtml(q[0])+'</p>'+
+   (s.compDone[current]?'<p class="notice success">✓ Этот вопрос уже решён. Выбери следующий незавершённый.</p>':
+   q[2].map(ans=>'<button class="option" data-choice="'+escapeHtml(ans)+'">'+escapeHtml(ans)+'</button>').join(""));
+  wireQuestionPicker("compCursor");
+  el.querySelectorAll("[data-choice]").forEach(b=>b.onclick=()=>{
+   const ok=equals(b.dataset.choice,q[1]);
+   record("understand",q[0],b.dataset.choice,q[1],ok);
+   if(ok){s.compDone[current]=true;s.compIndex=Object.values(s.compDone).filter(Boolean).length;s.compCursor=nextQuestion(current,n,s.compDone);save();render();note("Верно! Ты нашёл ответ в тексте.")}
+   else note("Не совсем. Найди нужную часть текста справа и попробуй ещё раз.",true);
+  });
  }else if(s.stage==="grammar"){
-  if(s.gramIndex>=L.grammar.length){el.innerHTML=sectionFinished("Все упражнения по грамматике решены.");wireNextSection();return}
-  let q=L.grammar[s.gramIndex];
-  el.innerHTML='<div class="eyebrow">Грамматика · '+(s.gramIndex+1)+'/'+L.grammar.length+'</div><p class="muted">Тема: '+escapeHtml(L.topic)+'</p><p class="task">'+escapeHtml(q[0])+'</p>'+textInput("Впиши пропущенное слово");
-  inputWire(answer=>{if(!answer.trim())return;let ok=equals(answer,q[2]);record("grammar",q[0],answer,q[1],ok);if(ok){s.gramIndex++;save();render();note("Правильно.")}else note("Повтори правило. Правильный вариант: "+q[1]+". Теперь введи его самостоятельно.",true)});
+  const n=L.grammar.length;
+  const current=Math.min(s.gramCursor||0,n-1),q=L.grammar[current];
+  const picker=questionPicker(L.grammar.map(q=>q[0]),s.gramDone,current);
+  if(isDone("grammar")){el.innerHTML=sectionFinished("Все задания по грамматике решены.")+picker;wireNextSection();wireQuestionPicker("gramCursor");return}
+  el.innerHTML='<div class="eyebrow">Грамматика · '+Object.values(s.gramDone).filter(Boolean).length+'/'+n+' готово</div>'+picker+
+   '<p class="muted">Тема: '+escapeHtml(L.topic)+'</p><p class="task">'+escapeHtml(q[0])+'</p>'+
+   (s.gramDone[current]?'<p class="notice success">✓ Уже решено. Открой другое задание.</p>':textInput("Впиши пропущенное слово"));
+  wireQuestionPicker("gramCursor");
+  if(!s.gramDone[current])inputWire(answer=>{
+   if(!answer.trim())return;
+   const ok=equals(answer,q[2]);record("grammar",q[0],answer,q[1],ok);
+   if(ok){s.gramDone[current]=true;s.gramIndex=Object.values(s.gramDone).filter(Boolean).length;s.gramCursor=nextQuestion(current,n,s.gramDone);save();render();note("Правильно!")}
+   else note("Не совсем. Правильный вариант: "+q[1]+". Попробуй ввести его ещё раз.",true);
+  });
  }else if(s.stage==="words"){
   let i=nextWordIndex();
-  if(i<0){el.innerHTML=sectionFinished("Все слова выбраны правильно. Если ошибался, слово возвращалось до правильного ответа.");wireNextSection();return}
+  if(i<0){el.innerHTML=sectionFinished("Все слова выбраны правильно. Если ошибался, слово возвращалось до правильного ответа.")+wordPicker(w,s.wordDone,-1);wireNextSection();wireWordPicker();return}
   let [en,ru]=w[i];
   const possible=w.filter((p,j)=>j!==i).map(p=>p[1]);
   const rotated=possible.slice(i%possible.length).concat(possible.slice(0,i%possible.length));
   const options=rotated.slice(0,3);
   options.splice(i%4,0,ru);
-  el.innerHTML='<div class="eyebrow">Выбери перевод · '+mastered()+'/'+w.length+' слов проверено</div><p>Сначала просто узнай значение. Не надо сразу писать слово по памяти — для этого позже будет отдельное упражнение.</p><div class="word">'+escapeHtml(en)+'</div>'+maskedExample(en)+options.map(v=>'<button type="button" class="option" data-word-option="'+escapeHtml(v)+'">'+escapeHtml(v)+'</button>').join("")+'<p class="small muted">Если ошибёшься, слово вернётся позже. Можешь подсмотреть в карточки или текст.</p>';
+  el.innerHTML='<div class="eyebrow">Выбери перевод · '+mastered()+'/'+w.length+' слов проверено</div>'+wordPicker(w,s.wordDone,i)+'<p>Сначала просто узнай значение. Не надо сразу писать слово по памяти — для этого позже будет отдельное упражнение.</p><div class="word">'+escapeHtml(en)+'</div>'+maskedExample(en)+options.map(v=>'<button type="button" class="option" data-word-option="'+escapeHtml(v)+'">'+escapeHtml(v)+'</button>').join("")+'<p class="small muted">Если ошибёшься, слово вернётся позже. Можешь подсмотреть в карточки или текст.</p>';
+  wireWordPicker();
   el.querySelectorAll("[data-word-option]").forEach(b=>b.onclick=()=>{
    const given=b.dataset.wordOption,ok=equals(given,ru);
    record("words",en,given,ru,ok);
@@ -220,14 +279,20 @@ function render(){
    note(ok?"Верно! Ты узнал значение слова.":"Пока нет. Правильно: "+ru+". Посмотри текст и карточки — это слово ещё вернётся.",!ok);
   });
  }else if(s.stage==="final"){
-  let subset=w.slice(0,Math.min(5,w.length));
-  if(s.finalIndex>=subset.length){el.innerHTML=sectionFinished("Письменная проверка завершена. Ошибки остались в истории, но ты их исправил.");wireNextSection();return}
-  let p=subset[s.finalIndex];
-  el.innerHTML='<div class="eyebrow">Итоговая проверка · '+(s.finalIndex+1)+'/'+subset.length+'</div><p class="muted">Вспомни английское слово по значению и контексту.</p><div class="word">'+escapeHtml(p[1])+'</div>'+maskedExample(p[0])+textInput("Английское слово")+sourceTextToggle();
-  inputWire(ans=>{
+  const subset=w.slice(0,Math.min(5,w.length)),n=subset.length;
+  const current=Math.min(s.finalCursor||0,n-1),p=subset[current];
+  const picker=questionPicker(subset.map(p=>p[1]),s.finalDone,current);
+  if(isDone("final")){el.innerHTML=sectionFinished("Письменная проверка завершена. Все ошибки можно найти в истории ответов.")+picker;wireNextSection();wireQuestionPicker("finalCursor");return}
+  el.innerHTML='<div class="eyebrow">Проверка слов · '+Object.values(s.finalDone).filter(Boolean).length+'/'+n+' готово</div>'+picker+
+   '<p class="muted">Вспомни английское слово по значению и контексту. Текст остаётся справа.</p><div class="word">'+escapeHtml(p[1])+'</div>'+
+   (s.finalDone[current]?'<p class="notice success">✓ Это слово уже написано правильно.</p>':
+    maskedExample(p[0])+textInput("Английское слово"));
+  wireQuestionPicker("finalCursor");
+  if(!s.finalDone[current])inputWire(ans=>{
    if(!ans.trim())return;
-   let ok=equals(ans,p[0]);record("final",p[0],ans,p[0],ok);
-   if(ok){s.finalIndex++;save();render();note("Правильно!")}else note("Неверно. Вернись к слову и попробуй ещё раз.",true);
+   const ok=equals(ans,p[0]);record("final",p[0],ans,p[0],ok);
+   if(ok){s.finalDone[current]=true;s.finalIndex=Object.values(s.finalDone).filter(Boolean).length;s.finalCursor=nextQuestion(current,n,s.finalDone);save();render();note("Правильно!")}
+   else note("Не совсем. Посмотри предложение из текста и попробуй ещё раз.",true);
   });
  }else if(s.stage==="review"){
   if(s.reviewCorrect>=3){el.innerHTML=sectionFinished("Три задания на закрепление выполнены. Если 30 минут ещё не прошло, повторяй карточки или читай текст; время продолжит учитываться при активной работе.");wireNextSection();return}
