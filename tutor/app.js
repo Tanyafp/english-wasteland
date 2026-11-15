@@ -36,7 +36,27 @@ function updateStats(){
 }
 function changeStage(stage){session().stage=stage;save();render()}
 function textInput(placeholder){return '<div class="control"><input id="answerInput" type="text" autocomplete="off" spellcheck="false" placeholder="'+escapeHtml(placeholder)+'"><button id="submitAnswer" class="primary">Проверить</button></div>'}
-function inputWire(fn){$("submitAnswer")?.addEventListener("click",()=>fn($("answerInput").value));$("answerInput")?.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();fn(e.target.value)}});$("answerInput")?.focus()}
+function inputWire(fn,voiceLang=null){
+  $("submitAnswer")?.addEventListener("click",()=>fn($("answerInput").value));
+  $("answerInput")?.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();fn(e.target.value)}});
+  if(voiceLang){
+    const b=document.createElement("button");b.type="button";b.textContent="🎤 Ответить голосом";
+    $("submitAnswer").parentElement.appendChild(b);
+    b.onclick=()=>{
+      const Engine=window.SpeechRecognition||window.webkitSpeechRecognition;
+      if(!Engine){note("Распознавание речи недоступно. Ответь письменно.",true);return}
+      try{
+        const r=new Engine();r.lang=voiceLang;r.continuous=false;r.interimResults=false;
+        b.disabled=true;b.textContent="Слушаю…";
+        r.onresult=e=>{const transcript=e.results[0][0].transcript;$("answerInput").value=transcript;lastAction=Date.now();fn(transcript)};
+        r.onerror=e=>{note("Микрофон: "+e.error+". Можно ответить письменно.",true)};
+        r.onend=()=>{if(b.isConnected){b.disabled=false;b.textContent="🎤 Ответить голосом"}};
+        r.start();
+      }catch(e){note("Не удалось включить микрофон: "+e.message,true)}
+    };
+  }
+  $("answerInput")?.focus();
+}
 function nextWordIndex(){let w=words(),s=session();for(let z=0;z<w.length;z++){let i=(s.wordCursor+z)%w.length;if((s.streak[w[i][0]]||0)<3)return i}return -1}
 function readingScore(transcript,text){
  let original=norm(text).split(" ").filter(Boolean),spoken=norm(transcript).split(" ").filter(Boolean);
@@ -109,7 +129,7 @@ function render(){
    s.streak[en]=ok?level+1:0;
    s.wordCursor=(i+1)%w.length;save();render();
    note(ok?"Верно! Серия: "+s.streak[en]+" из 3.":"Пока неверно. Правильно: "+expected+". Слово вернётся позже.",!ok);
-  });
+  },mode===0?"ru-RU":mode===1?"en-US":null);
  }else if(s.stage==="final"){
   let subset=w.slice(0,Math.min(5,w.length));
   if(s.finalIndex>=subset.length){changeStage("review");return}
