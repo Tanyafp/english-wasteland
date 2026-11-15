@@ -4,7 +4,8 @@ const K="english-tutor-v1";
 const $=id=>document.getElementById(id);
 const LESSONS=window.TUTOR_LESSONS||[];
 const DAY_MS=1800;
-const PHASES={study:"1 · Новые слова",reading:"2 · Чтение вслух",understand:"3 · Понимание текста",grammar:"4 · Грамматика",words:"5 · Слова по памяти",final:"6 · Контрольная",review:"7 · Закрепление",completed:"Урок завершён"};
+const REQUIRED=["study","reading","understand","grammar","words","final","review"];
+const PHASES={study:"1 · Карточки",reading:"2 · Чтение вслух",understand:"3 · Вопросы по тексту",grammar:"4 · Грамматика",words:"5 · Выбор перевода",final:"6 · Проверка слов",review:"7 · Закрепление",completed:"Урок завершён"};
 const escapeHtml=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const norm=v=>String(v??"").toLocaleLowerCase().replace(/[^\p{L}\p{N}\s']/gu," ").replace(/\s+/g," ").trim().replace(/ё/g,"е");
 const equals=(value,accepted)=>[].concat(accepted).some(x=>norm(x)===norm(value));
@@ -20,11 +21,55 @@ let lastAction=Date.now(),lastSave=0,guardConnected=false,parentUnlocked=false,r
 function save(){localStorage.setItem(K,JSON.stringify(state));lastSave=Date.now()}
 function lesson(){return LESSONS.find(x=>x.id===state.assigned)||LESSONS[0]}
 function words(){let base=lesson().words.slice(),extras=state.extraWordsByLesson[lesson().id]||[];for(const pair of extras){if(!base.some(p=>norm(p[0])===norm(pair[0])))base.push(pair)}return base}
-function newSession(){return {date:today(),lessonId:lesson().id,stage:"study",studyIndex:0,compIndex:0,gramIndex:0,wordCursor:0,finalIndex:0,reviewIndex:0,reviewCorrect:0,active:0,spoken:false,readCoverage:null,spokenMode:"",streak:{},complete:false,completedAt:null}}
-function session(){let key=today()+"|"+lesson().id;if(!state.sessions[key]){state.sessions[key]=newSession();save()}return state.sessions[key]}
+function newSession(){return {date:today(),lessonId:lesson().id,stage:"study",studyIndex:0,compIndex:0,gramIndex:0,wordCursor:0,finalIndex:0,reviewIndex:0,reviewCorrect:0,active:0,spoken:false,readCoverage:null,spokenMode:"",streak:{},cardSeen:{},cardOpen:{},wordDone:{},complete:false,completedAt:null}}
+function session(){
+ const key=today()+"|"+lesson().id;
+ if(!state.sessions[key]){state.sessions[key]=newSession();save()}
+ const s=state.sessions[key];
+ s.streak=s.streak||{};s.cardSeen=s.cardSeen||{};s.cardOpen=s.cardOpen||{};s.wordDone=s.wordDone||{};
+ // Keep progress earned in the previous linear version.
+ if(!s.cardMigrationDone){if(s.studyIndex>=words().length)words().forEach(p=>s.cardSeen[p[0]]=true);s.cardMigrationDone=true;save()}
+ if(!s.wordMigrationDone){words().forEach(p=>{if((s.streak[p[0]]||0)>=3)s.wordDone[p[0]]=true});s.wordMigrationDone=true;save()}
+ return s;
+}
 function activeTime(n){return String(Math.floor(n/60)).padStart(2,"0")+":"+String(n%60).padStart(2,"0")}
-function mastered(){return words().filter(p=>(session().streak[p[0]]||0)>=3).length}
-function progress(){let s=session();return ({study:5,reading:17,understand:30,grammar:50,words:70,final:85,review:95,completed:100}[s.stage]||0)}
+function mastered(){return words().filter(p=>!!session().wordDone[p[0]]).length}
+function isDone(stage,s=session()){
+ const w=words(),L=lesson();
+ switch(stage){
+  case "study":return w.every(p=>!!s.cardSeen[p[0]]);
+  case "reading":return !!s.spoken;
+  case "understand":return (s.compIndex||0)>=L.questions.length;
+  case "grammar":return (s.gramIndex||0)>=L.grammar.length;
+  case "words":return w.every(p=>!!s.wordDone[p[0]]);
+  case "final":return (s.finalIndex||0)>=Math.min(5,w.length);
+  case "review":return (s.reviewCorrect||0)>=3;
+ }
+ return false;
+}
+function completedSections(){return REQUIRED.filter(k=>isDone(k)).length}
+function allSectionsDone(){return REQUIRED.every(k=>isDone(k))}
+function nextPending(){return REQUIRED.find(k=>!isDone(k))||"review"}
+function progress(){return Math.round(100*completedSections()/REQUIRED.length)}
+function renderReference(){
+ const L=lesson(),ref=$("lessonReference");if(!ref)return;
+ ref.innerHTML='<div class="eyebrow">Опора для каждого задания</div><h3>📖 Текст всегда рядом</h3><div class="reading">'+escapeHtml(L.text)+'</div><details class="source-text"><summary>🗂 Словарик с переводами</summary><div class="refwords">'+words().map(p=>'<div class="refword"><b>'+escapeHtml(p[0])+'</b>'+escapeHtml(p[1])+'</div>').join("")+'</div></details><p class="small muted">Сначала можно смотреть сюда. Постепенно старайся отвечать самостоятельно.</p>';
+}
+function renderNav(){
+ const el=$("sectionNav");if(!el)return;
+ el.innerHTML=REQUIRED.map(k=>'<button type="button" data-section="'+k+'" class="'+(session().stage===k?"active ": "")+(isDone(k)?"done":"")+'" aria-current="'+(session().stage===k?"step":"false")+'">'+(isDone(k)?"✓ ":"○ ")+escapeHtml(PHASES[k].replace(/^\d+ · /,""))+'</button>').join("");
+ el.querySelectorAll("[data-section]").forEach(b=>b.onclick=()=>changeStage(b.dataset.section));
+}
+function tryComplete(){
+ const s=session();
+ if(!s.complete&&allSectionsDone()&&s.active>=DAY_MS){
+  s.stage="completed";s.complete=true;s.completedAt=new Date().toISOString();save();render();unlockSteam();
+ }
+}
+function sectionFinished(text){
+ return '<div class="section-complete"><h3>✓ Этот раздел выполнен</h3><p>'+escapeHtml(text)+'</p><button id="goNextSection" class="primary">Перейти к следующему незавершённому разделу</button></div>';
+}
+function wireNextSection(){const b=$("goNextSection");if(b)b.onclick=()=>changeStage(nextPending())}
 function note(t,isError=false){$("feedback").innerHTML='<div class="notice '+(isError?"error":"success")+'">'+escapeHtml(t)+'</div>'}
 function record(type,prompt,answer,expected,ok){state.history.push({at:new Date().toISOString(),date:today(),lessonId:lesson().id,type,prompt,answer:String(answer),expected:String(expected),ok});if(state.history.length>2500)state.history=state.history.slice(-2500);lastAction=Date.now();save()}
 function advance(stage){let s=session();s.stage=stage;save();render()}
@@ -33,8 +78,9 @@ function updateStats(){
  $("timer").textContent=activeTime(s.active)+" / 30:00";
  $("mastered").textContent=mastered()+" / "+words().length;
  $("progressBar").style.width=progress()+"%";
+ const hint=$("completionHint");if(hint)hint.textContent="Выполнено "+completedSections()+" из "+REQUIRED.length+" разделов. Можно выбрать любой раздел. Steam откроется только когда все задания сделаны и прошло минимум 30 активных минут.";
 }
-function changeStage(stage){session().stage=stage;save();render()}
+function changeStage(stage){if(!REQUIRED.includes(stage)&&stage!=="completed")return;try{if(recognition){recognition.abort();recognition=null}}catch{}session().stage=stage;save();render()}
 function textInput(placeholder){return '<div class="control"><input id="answerInput" type="text" autocomplete="off" spellcheck="false" placeholder="'+escapeHtml(placeholder)+'"><button id="submitAnswer" class="primary">Проверить</button></div>'}
 function inputWire(fn,voiceLang="en-US"){
  const input=$("answerInput"),submit=$("submitAnswer");
@@ -134,13 +180,15 @@ function render(){
  $("lessonTitle").textContent=L.title;$("lessonLevel").textContent=L.level;
  $("lessonInfo").textContent=L.topic+" · "+w.length+" слов · минимум 30 минут активной работы";
  $("lessonPhase").textContent=PHASES[s.stage]||"Урок";$("feedback").innerHTML="";
- updateStats();
+ updateStats();renderReference();renderNav();
  if(s.stage==="study"){
-  if(s.studyIndex>=w.length){changeStage("reading");return}
-  let pair=w[s.studyIndex];
-  el.innerHTML='<div class="eyebrow">Знакомство со словами · '+(s.studyIndex+1)+'/'+w.length+'</div><p class="muted">Прочитай слово вслух, вспомни значение и произнеси пример.</p><div class="word">'+escapeHtml(pair[0])+'</div><p class="task">'+escapeHtml(pair[1])+'</p><div class="control"><button id="pronounce">🔊 Послушать</button><button id="nextStudy" class="primary">Запомнил, дальше</button></div><p class="small muted">Позже программа попросит написать и перевести это слово без подсказок.</p>';
-  $("pronounce").onclick=()=>{if(!("speechSynthesis" in window))return note("Синтез речи недоступен.",true);speechSynthesis.cancel();let utter=new SpeechSynthesisUtterance(pair[0]);utter.lang="en-US";utter.rate=.78;speechSynthesis.speak(utter)};
-  $("nextStudy").onclick=()=>{s.studyIndex++;save();render()};
+  const seen=w.filter(p=>s.cardSeen[p[0]]).length;
+  el.innerHTML='<div class="eyebrow">Карточки для знакомства · '+seen+'/'+w.length+'</div><p>Никакой зубрёжки с первого раза. Нажимай на карточки — они перевернутся и покажут перевод. Все карточки можно просматривать сколько угодно раз.</p><div class="flash-grid">'+w.map(p=>{
+   const open=!!s.cardOpen[p[0]],seen=!!s.cardSeen[p[0]];
+   return '<button type="button" class="flashcard '+(open?"flipped":"")+'" data-flash="'+escapeHtml(p[0])+'" aria-label="Перевернуть карточку '+escapeHtml(p[0])+'"><span class="flash-main">'+escapeHtml(open?p[1]:p[0])+'</span><span class="flash-hint">'+(open?escapeHtml(p[0]):"Нажми, чтобы увидеть перевод")+'</span>'+(seen?'<span class="flash-check">✓ Просмотрено</span>':'')+'</button>';
+  }).join("")+'</div><p class="small muted">Можешь начать с вопросов или чтения — карточки никуда не исчезнут.</p>'+(isDone("study")?sectionFinished("Все карточки просмотрены. Позже слова будут встречаться в тексте и заданиях."):"");
+  el.querySelectorAll("[data-flash]").forEach(b=>b.onclick=()=>{const en=b.dataset.flash;s.cardOpen[en]=!s.cardOpen[en];if(s.cardOpen[en])s.cardSeen[en]=true;save();render()});
+  wireNextSection();
  }else if(s.stage==="reading"){renderReading()}
  else if(s.stage==="understand"){
   if(s.compIndex>=L.questions.length){changeStage("grammar");return}
