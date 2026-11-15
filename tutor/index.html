@@ -3,9 +3,9 @@
 <body><main>
 <header><div><div class="eyebrow">English Tutor · Свой темп, настоящие знания</div><h1>Английский каждый день</h1><p>Полноценный урок: чтение, понимание, грамматика и память</p></div><div class="row"><button id="studentNav">Урок</button><button id="parentNav">Родительский кабинет</button></div></header>
 <section id="studentView">
-<div class="cards"><div class="card"><strong id="timer">00:00 / 30:00</strong><span>Активное время сегодня</span></div><div class="card"><strong id="mastered">0 / 8</strong><span>Выучено слов в уроке</span></div><div class="card"><strong id="steamStatus">Проверяем…</strong><span>Контроль Steam</span></div></div>
+<div class="cards"><div class="card"><strong id="timer">00:00 / 30:00</strong><span>Активное время сегодня</span></div><div class="card"><strong id="mastered">0 / 8</strong><span>Слов проверено в уроке</span></div><div class="card"><strong id="steamStatus">Проверяем…</strong><span>Контроль Steam</span></div></div>
 <div class="hero"><div class="row between"><span class="badge" id="lessonLevel">A1</span><span class="steps" id="lessonPhase">Урок</span></div><h2 id="lessonTitle">Английский на сегодня</h2><p id="lessonInfo" class="muted"></p><div class="bar"><div id="progressBar"></div></div>
-<div id="taskArea" class="pane"></div><div id="feedback" role="status" aria-live="polite"></div></div>
+<p id="completionHint" class="small muted"></p><nav id="sectionNav" class="section-nav" aria-label="Разделы урока"></nav><div class="study-grid"><div id="taskArea" class="pane"></div><aside id="lessonReference" class="reference" aria-label="Текст урока и словарь"></aside></div><div id="feedback" role="status" aria-live="polite"></div></div>
 <p class="footer">Считается активное время работы в открытом окне, а не просто время после запуска. Голосовая проверка сверяет распознанные слова с текстом, но не ставит фонетическую оценку. Результаты этого прототипа пока сохраняются только в данном браузере.</p>
 </section>
 <section id="parentView" class="hidden">
@@ -14,7 +14,7 @@
 <div id="parentDashboard" class="hidden">
 <div class="cards"><div class="card"><strong id="parentDays">0</strong><span>Завершённых дней</span></div><div class="card"><strong id="parentMinutes">0</strong><span>Активных минут</span></div><div class="card"><strong id="parentErrors">0</strong><span>Ошибок за всё время</span></div></div>
 <div class="grid2"><div class="pane"><h3>Выдать следующий урок</h3><label for="lessonSelect">Тема урока</label><select id="lessonSelect" style="display:block;width:100%;margin:9px 0"></select><label for="extraWords">Дополнительные слова (по одному в строке: английский = перевод)</label><textarea id="extraWords" rows="5" style="width:100%;margin:9px 0" placeholder="bridge = мост&#10;quiet = тихий"></textarea><button class="primary" id="assignLesson">Назначить урок и слова</button><p id="assignMessage" class="muted"></p></div>
-<div class="pane"><h3>Освоение слов сегодня</h3><div id="parentWords"></div><p class="small muted">Слово считается выученным после трёх правильных ответов подряд в нескольких видах проверки. Ошибки сохраняются в истории.</p></div></div>
+<div class="pane"><h3>Освоение слов сегодня</h3><div id="parentWords"></div><p class="small muted">Слова проверяются с опорой на карточки и текст; ошибки сохраняются, а знание подтверждается дополнительно на следующих уроках.</p></div></div>
 <div class="pane"><h3>Последние ответы и ошибки</h3><div class="table-scroll"><table><thead><tr><th>Когда</th><th>Этап</th><th>Задание</th><th>Ответ</th><th>Результат</th></tr></thead><tbody id="attemptRows"></tbody></table></div></div>
 <div class="row"><button id="exportData">Скачать отчёт JSON</button><button id="lockParent">Закрыть кабинет</button></div>
 <p class="footer">PIN — защита от случайного входа, а не от администратора компьютера. Отчёты ребёнка не публикуются в GitHub. Для просмотра с другого устройства позже подключим уже существующую облачную базу с отдельными правами доступа.</p>
