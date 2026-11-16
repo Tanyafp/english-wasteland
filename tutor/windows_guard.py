@@ -17,7 +17,7 @@ HERE = Path(__file__).resolve().parent
 DATA_HOME = Path(os.environ.get("APPDATA") or Path.home()) / "EnglishTutor"
 LOCK_FILE = DATA_HOME / "steam_status.json"
 HOST, PORT = "127.0.0.1", 8765
-SAFE_FILES = {"index.html", "style.css", "lessons.js", "app.js"}
+SAFE_FILES = {"index.html", "style.css", "lessons.js", "lessons-extra.js", "schedule.js", "app.js"}
 WINDOWS = os.name == "nt"
 
 def load_status():
@@ -67,9 +67,9 @@ class Handler(BaseHTTPRequestHandler):
         path = urlsplit(self.path).path
         if path == "/api/guard":
             return self.json(200, {
-                "unlocked": unlocked_today(),
+                "unlocked": True,
                 "today": dt.date.today().isoformat(),
-                "supported": WINDOWS
+                "supported": False
             })
         if path == "/":
             path = "/index.html"
@@ -124,10 +124,10 @@ def main():
     if not WINDOWS:
         print("Steam guard works only on Windows; lessons work anywhere.")
     server = ThreadingHTTPServer((HOST, PORT), Handler)
-    threading.Thread(target=guard_loop, daemon=True).start()
+    # Steam protection intentionally disabled: lessons run on an honor system.
     print(f"English Tutor: http://{HOST}:{PORT}/")
-    print("Steam stays locked until a 30-minute lesson is completed today.")
-    print("Minimize this window, but do not close it or protection will stop.")
+    print("Steam is NOT blocked. Lessons use an honor system.")
+    print("This window runs only the local learning site. You can close it to stop the site.")
     try:
         server.serve_forever(poll_interval=0.4)
     except KeyboardInterrupt:
