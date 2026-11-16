@@ -341,13 +341,11 @@ function render(){
     if(ok){s.reviewCorrect++;s.reviewIndex++;save();if(s.active>=minSeconds()&&s.reviewCorrect>=repeatTarget()&&allSectionsDone()){complete();return}render();note("Верно. Продолжаем повторение.")}else{ s.reviewIndex++;save();render();note("Правильно: "+p[0]+". Мы вернёмся к нему ещё.",true)}
   });
  }else if(s.stage==="completed"){
-  el.innerHTML='<div class="eyebrow">На сегодня достаточно</div><h2>Урок сдан ✓</h2><p class="task">Ты занимался '+activeTime(s.active)+' и выполнил обязательные задания.</p><p>Выучено слов: <strong>'+mastered()+' из '+w.length+'</strong>. Завтра будут новые задания или повторение трудных слов.</p><p id="unlockMessage" class="notice">Проверка разрешения Steam…</p>';
+  el.innerHTML='<div class="eyebrow">На сегодня достаточно</div><h2>Урок сдан ✓</h2><p class="task">Ты занимался '+activeTime(s.active)+' и выполнил обязательные задания.</p><p>Выучено слов: <strong>'+mastered()+' из '+w.length+'</strong>. Следующий учебный день откроет новую тему, а в пятницу будет повторение недели.</p><p id="unlockMessage" class="notice">Проверка разрешения Steam…</p>';
 
  }
 }
-function complete(){
- let s=session();s.stage="completed";s.complete=true;s.completedAt=new Date().toISOString();save();render();unlockSteam();
-}
+function complete(){const s=session();if(!allSectionsDone()||s.active<minSeconds())return;s.stage="completed";s.complete=true;s.completedAt=new Date().toISOString();save();render()}
 function tick(){
  const current=today();
  if(current!==lastCalendarToday){
