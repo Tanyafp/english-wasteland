@@ -3,10 +3,11 @@
 <body><main>
 <header><div><div class="eyebrow">English Tutor · Свой темп, настоящие знания</div><h1>Английский каждый день</h1><p>Полноценный урок: чтение, понимание, грамматика и память</p></div><div class="row"><button id="studentNav">Урок</button><button id="parentNav">Родительский кабинет</button></div></header>
 <section id="studentView">
-<div class="cards"><div class="card"><strong id="timer">00:00 / 30:00</strong><span>Активное время сегодня</span></div><div class="card"><strong id="mastered">0 / 8</strong><span>Слов проверено в уроке</span></div><div class="card"><strong id="steamStatus">Проверяем…</strong><span>Контроль Steam</span></div></div>
-<div class="hero"><div class="row between"><span class="badge" id="lessonLevel">A1</span><span class="steps" id="lessonPhase">Урок</span></div><h2 id="lessonTitle">Английский на сегодня</h2><p id="lessonInfo" class="muted"></p><div class="bar"><div id="progressBar"></div></div>
+<div class="cards"><div class="card"><strong id="timer">00:00 / 30:00</strong><span>Активное время сегодня</span></div><div class="card"><strong id="mastered">0 / 8</strong><span>Слов проверено в уроке</span></div><div class="card"><strong id="dailyStatus">По расписанию</strong><span>Учебный день · без блокировки Steam</span></div></div>
+<div class="pane" id="calendarPanel"><div class="row between"><div><div class="eyebrow">Расписание</div><h3>Четыре недели занятий</h3></div><span class="badge">Пн–Чт: 30 мин · Пт: 45 мин · Сб–Вс: отдых</span></div><div id="calendarBoard"></div></div>
+<div class="hero" id="lessonHero"><div class="row between"><span class="badge" id="lessonLevel">A1</span><span class="steps" id="lessonPhase">Урок</span></div><h2 id="lessonTitle">Английский на сегодня</h2><p id="lessonInfo" class="muted"></p><div class="bar"><div id="progressBar"></div></div>
 <p id="completionHint" class="small muted"></p><nav id="sectionNav" class="section-nav" aria-label="Разделы урока"></nav><div class="study-grid"><div id="taskArea" class="pane"></div><aside id="lessonReference" class="reference" aria-label="Текст урока и словарь"></aside></div><div id="feedback" role="status" aria-live="polite"></div></div>
-<p class="footer">Считается активное время работы в открытом окне, а не просто время после запуска. Голосовая проверка сверяет распознанные слова с текстом, но не ставит фонетическую оценку. Результаты этого прототипа пока сохраняются только в данном браузере.</p>
+<p class="footer">Занятия сохраняются в этом браузере: недоделанный день можно открыть снова. В пятницу — большая проверка по четырём урокам недели. Суббота и воскресенье свободны. Steam не блокируется. Результаты пока не синхронизируются между устройствами. Голос распознаётся приблизительно, без фонетической оценки.</p>
 </section>
 <section id="parentView" class="hidden">
 <div class="hero"><div class="eyebrow">Для взрослого</div><h2>Кабинет родителя</h2>
@@ -19,4 +20,4 @@
 <div class="row"><button id="exportData">Скачать отчёт JSON</button><button id="lockParent">Закрыть кабинет</button></div>
 <p class="footer">PIN — защита от случайного входа, а не от администратора компьютера. Отчёты ребёнка не публикуются в GitHub. Для просмотра с другого устройства позже подключим уже существующую облачную базу с отдельными правами доступа.</p>
 </div></div></section>
-</main><script src="lessons.js"></script><script src="app.js"></script></body></html>
+</main><script src="lessons.js"></script><script src="lessons-extra.js"></script><script src="schedule.js"></script><script src="app.js"></script></body></html>
