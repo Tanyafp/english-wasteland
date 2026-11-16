@@ -348,8 +348,15 @@ function complete(){
  let s=session();s.stage="completed";s.complete=true;s.completedAt=new Date().toISOString();save();render();unlockSteam();
 }
 function tick(){
- if(document.visibilityState==="visible"&&document.hasFocus()&&(Date.now()-lastAction)<90000){
-  let s=session();if(!s.complete){s.active+=1;if(Date.now()-lastSave>9000)save()}
+ const current=today();
+ if(current!==lastCalendarToday){
+  if(selectedDate===lastCalendarToday)selectedDate=current;
+  lastCalendarToday=current;lastAction=Date.now();render();
+ }
+ if(planFor().status!=="lesson")return;
+ if(document.visibilityState==="visible"&&document.hasFocus()&&!$("studentView").classList.contains("hidden")&&Date.now()-lastAction<90000){
+  const activeSession=session();
+  if(!activeSession.complete){activeSession.active+=1;if(Date.now()-lastSave>9000)save()}
  }
  updateStats();tryComplete();
 }
@@ -371,9 +378,10 @@ function renderParent(){
  if(!parentUnlocked)return;
  const sessions=Object.values(state.sessions),done=sessions.filter(x=>x.complete),total=Math.round(sessions.reduce((n,s)=>n+(s.active||0),0)/60);
  $("parentDays").textContent=done.length;$("parentMinutes").textContent=total;$("parentErrors").textContent=state.history.filter(a=>!a.ok).length;
- $("lessonSelect").innerHTML=LESSONS.map(l=>'<option value="'+l.id+'" '+(state.assigned===l.id?"selected":"")+'>'+escapeHtml(l.title)+" · "+escapeHtml(l.level)+"</option>").join("");
- $("extraWords").value=(state.extraWordsByLesson[state.assigned]||[]).map(p=>p[0]+" = "+p[1]).join("\n");
- $("parentWords").innerHTML='<div class="table-scroll"><table><thead><tr><th>Слово</th><th>Перевод выбран</th><th>Ошибок</th></tr></thead><tbody>'+words().map(w=>'<tr><td>'+escapeHtml(w[0])+'</td><td>'+(session().wordDone[w[0]]?'✓':'—')+'</td><td>'+state.history.filter(a=>a.type==="words"&&a.lessonId===lesson().id&&a.prompt===w[0]&&!a.ok).length+'</td></tr>').join("")+'</tbody></table></div>';
+ $("lessonSelect").innerHTML=LESSONS.map(l=>'<option value="'+l.id+'" '+(lesson().id===l.id?"selected":"")+'>'+escapeHtml(l.title)+" · "+escapeHtml(l.level)+"</option>").join("");
+ $("extraWords").value=(state.extraWordsByLesson[lesson().id]||[]).map(p=>p[0]+" = "+p[1]).join("\n");
+ if(planFor().status!=="lesson")$("parentWords").textContent="Выбери учебный день в расписании. Суббота и воскресенье свободны.";
+ else $("parentWords").innerHTML='<div class="table-scroll"><table><thead><tr><th>Слово</th><th>Перевод выбран</th><th>Ошибок</th></tr></thead><tbody>'+words().map(w=>'<tr><td>'+escapeHtml(w[0])+'</td><td>'+(session().wordDone[w[0]]?'✓':'—')+'</td><td>'+state.history.filter(a=>a.type==="words"&&a.lessonId===lesson().id&&a.prompt===w[0]&&!a.ok).length+'</td></tr>').join("")+'</tbody></table></div>';
  $("attemptRows").innerHTML=state.history.slice(-90).reverse().map(a=>'<tr><td>'+escapeHtml(new Date(a.at).toLocaleString("ru-RU"))+'</td><td>'+escapeHtml(a.type)+'</td><td>'+escapeHtml(a.prompt).slice(0,110)+'</td><td>'+escapeHtml(a.answer).slice(0,100)+'</td><td style="color:'+(a.ok?"#1d7654":"#b33d41")+'">'+(a.ok?"Верно":"Ошибка")+'</td></tr>').join("")||'<tr><td colspan="5">Пока нет ответов</td></tr>';
 }
 $("pinButton").onclick=async()=>{
