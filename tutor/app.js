@@ -23,14 +23,14 @@ let selectedDate=today();
 let parentAssignmentDate=today();
 let lastAction=Date.now(),lastSave=0,parentUnlocked=false,recognition=null,lastCalendarToday=today();
 function save(){localStorage.setItem(K,JSON.stringify(state));lastSave=Date.now()}
-function planFor(date=selectedDate){return CAL.plan(date,state.dayOverrides)}
+function planFor(date=selectedDate){return CAL.plan(date,state.dayOverrides,state.extraWordsByLesson)}
 function lesson(){const p=planFor();return p.status==="lesson"?p.lesson:LESSONS[0]}
 function minSeconds(){const p=planFor();return (p.status==="lesson"?p.minutes:30)*60}
 function finalCount(){return planFor().isReview?8:5}
 function repeatTarget(){return planFor().isReview?6:3}
 function renderCalendar(){
  const panel=$("calendarBoard");if(!panel)return;
- const weeks=CAL.board(state.dayOverrides);
+ const weeks=CAL.board(state.dayOverrides,state.extraWordsByLesson);
  panel.innerHTML=weeks.map(week=>'<div class="calendar-week"><strong>Неделя '+week.week+'</strong><div class="calendar-days">'+week.dates.map((day,i)=>{
   const labels=["Пн","Вт","Ср","Чт","Пт","Сб","Вс"],isPast=day.date<=today();
   const stored=day.status==="lesson"?state.sessions[day.date+"|"+day.lesson.id]:null;
@@ -370,7 +370,7 @@ $("parentNav").onclick=()=>view(true);
 async function hashPin(pin,salt){let data=new TextEncoder().encode(salt+":"+pin);let bytes=await crypto.subtle.digest("SHA-256",data);return Array.from(new Uint8Array(bytes)).map(x=>x.toString(16).padStart(2,"0")).join("")}
 function renderParentWeeks(){
  const out=$("parentWeekSummary");if(!out)return;
- out.innerHTML=CAL.board(state.dayOverrides).map(week=>
+ out.innerHTML=CAL.board(state.dayOverrides,state.extraWordsByLesson).map(week=>
   '<div class="parent-week"><h4>Неделя '+week.week+'</h4><div class="table-scroll"><table><thead><tr><th>День</th><th>Тема</th><th>Время</th><th>Состояние</th></tr></thead><tbody>'+week.dates.map(p=>{
    if(p.status==="rest")return '<tr><td>'+p.date.slice(5)+'</td><td colspan="3">Выходной</td></tr>';
    const result=state.sessions[p.date+"|"+p.lesson.id];
@@ -398,8 +398,8 @@ function renderParent(){
  const sessions=Object.values(state.sessions),done=sessions.filter(x=>x.complete),total=Math.round(sessions.reduce((n,s)=>n+(s.active||0),0)/60);
  $("parentDays").textContent=done.length;$("parentMinutes").textContent=total;$("parentErrors").textContent=state.history.filter(a=>!a.ok).length;
  renderParentWeeks();
- $("parentAssignDate").innerHTML=CAL.board(state.dayOverrides).flatMap(w=>w.dates).filter(d=>d.status==="lesson").map(d=>'<option value="'+d.date+'">'+d.date+' · '+escapeHtml(d.lesson.title)+'</option>').join("");
- if(!CAL.board(state.dayOverrides).some(w=>w.dates.some(d=>d.date===parentAssignmentDate&&d.status==="lesson")))parentAssignmentDate=CAL.ANCHOR;
+ $("parentAssignDate").innerHTML=CAL.board(state.dayOverrides,state.extraWordsByLesson).flatMap(w=>w.dates).filter(d=>d.status==="lesson").map(d=>'<option value="'+d.date+'">'+d.date+' · '+escapeHtml(d.lesson.title)+'</option>').join("");
+ if(!CAL.board(state.dayOverrides,state.extraWordsByLesson).some(w=>w.dates.some(d=>d.date===parentAssignmentDate&&d.status==="lesson")))parentAssignmentDate=CAL.ANCHOR;
  $("parentAssignDate").value=parentAssignmentDate;
  $("lessonSelect").innerHTML=LESSONS.map(l=>'<option value="'+l.id+'" '+(planFor(parentAssignmentDate).lesson?.id===l.id?"selected":"")+'>'+escapeHtml(l.title)+" · "+escapeHtml(l.level)+"</option>").join("");
  fillAssignment(parentAssignmentDate);
