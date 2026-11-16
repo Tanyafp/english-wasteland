@@ -7,8 +7,8 @@
  const shift=(iso,n)=>{const d=toDate(iso);d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)};
  const between=(a,b)=>Math.round((toDate(a).getTime()-toDate(b).getTime())/86400000);
  const all=()=>window.TUTOR_LESSONS||[];
- function buildReview(week){
-   const source=all().slice(week*4,week*4+4);
+ function buildReview(week,overrides={}){
+   const source=Array.from({length:4},(_,day)=>{const date=shift(ANCHOR,week*7+day);return all().find(l=>l.id===overrides[date])||all()[week*4+day]});
    if(source.length<4)return null;
    const unique=new Set(),collected=[];
    for(const item of source){let taken=0;for(const pair of item.words){if(unique.has(pair[0]))continue;unique.add(pair[0]);collected.push(pair);if(++taken===4)break}}
@@ -32,7 +32,7 @@
    const week=Math.floor(delta/7),weekday=delta%7;
    if(weekday===5||weekday===6)return {date:iso,status:"rest",week:week+1,weekday,title:"Выходной — отдых от английского"};
    if(weekday===4){
-     const lesson=buildReview(week);
+     const lesson=buildReview(week,overrides);
      return lesson?{date:iso,status:"lesson",isReview:true,week:week+1,weekday,lesson,minutes:45}: {date:iso,status:"finished",title:"Недостаточно уроков для повторения"};
    }
    const index=week*4+weekday;
