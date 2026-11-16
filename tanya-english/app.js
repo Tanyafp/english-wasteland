@@ -93,7 +93,7 @@ function renderStats(){
  $("timeBar").style.width=Math.min(100,seconds/(minutes(l)*60)*100)+"%";
  $("sectionBar").style.width=100*done/SECTION_INFO.length+"%";
  $("wordBar").style.width=100*count(d.cards)/l.words.length+"%";
- $("lessonState").textContent=d.finished?"✓ Неделя в копилке":done===SECTION_INFO.length?"Все блоки пройдены":done?"В процессе":"Можно начинать";
+ $("lessonState").textContent=d.finished?(l.review?"✓ Неделя в копилке":"✓ Урок завершён"):done===SECTION_INFO.length?"Все блоки пройдены":done?"В процессе":"Можно начинать";
  $("lessonState").className="pill"+(d.finished?" success":"");
 }
 function renderReference(){
@@ -230,6 +230,14 @@ function renderFinish(){
   html='<div class="finish-box"><h3>Все задания выполнены — отличная работа</h3><p>До полного занятия осталось '+fmt(needs)+' активного времени. Послушай диалог ещё раз, потренируй трудные слова или повтори разговорные фразы. Таймер идёт при активной работе на вкладке.</p></div>';
  }else{
   html='<div class="finish-box"><h3>'+n+' из '+total+' блоков выполнено</h3><p>Проходи упражнения в любом порядке, ответы сохраняются автоматически. День считается завершённым после всех восьми блоков и '+minutes(L())+' минут активной работы. Текущие ошибки: '+errors+'.</p></div>';
+ }
+ if(L().review){
+  const summary=LESSONS.slice(0,4).map(x=>{
+    const day=state.days[x.id]||{},tries=Array.isArray(day.attempts)?day.attempts:[];
+    const errors=tries.filter(a=>!a.correct).length;
+    return '<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #e9e5df"><span>'+e(x.day)+'</span><span><b>'+Math.floor(Number(day.seconds)||0)+' мин</b> · '+errors+' ошибок · '+(day.finished?'✓ пройден':'в процессе')+'</span></div>';
+  }).join("");
+  html+='<div class="finish-box" style="margin-top:14px"><h3>📊 Как прошли четыре дня</h3><p style="margin-bottom:12px">По этим результатам мы подберём нагрузку следующей недели.</p>'+summary+'</div>';
  }
  $("finishPanel").innerHTML=html;
 }
