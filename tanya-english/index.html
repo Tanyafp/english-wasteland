@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f8f5f0">
+<meta name="description" content="Английский для себя: пять дней практики, разговорная речь и аудио.">
+<title>My English Week — говорю по-английски</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="shell">
+  <header class="site-head">
+    <a class="brand" href="./"><span class="brand-mark">EN<span>✳</span></span><span>my english <small>practice studio</small></span></a>
+    <div class="header-tools">
+      <label class="rate-control" for="voiceRate">Темп речи <strong id="rateLabel">0.85×</strong><input type="range" id="voiceRate" min="0.65" max="1.1" step="0.05" value="0.85"></label>
+      <label class="voice-control" for="accent">Акцент <select id="accent"><option value="en-GB">British</option><option value="en-US">American</option></select></label>
+      <button class="outline small-btn" id="soundTest" type="button">🔊 Проверить звук</button>
+    </div>
+  </header>
+  <main>
+    <section class="intro">
+      <div><div class="eyebrow">YOUR FIRST WEEK · 16—20 NOV 2026</div><h1>Английский, который<br><em>не страшно говорить.</em></h1><p>Сначала слушаем. Потом понимаем, запоминаем слова и понемногу начинаем говорить. Можно ошибаться и повторять сколько хочется.</p></div>
+      <div class="week-flag"><span>01</span><small>НЕДЕЛЯ ИЗУЧЕНИЯ</small><b>A1 → A1+</b></div>
+    </section>
+    <section class="week" aria-label="Дни первой недели">
+      <div class="week-top"><h2>Твоя неделя</h2><span>Пн–Чт по 30 минут · Пятница 45 минут</span></div>
+      <div id="dayStrip" class="day-strip"></div>
+    </section>
+    <section class="dashboard" aria-label="Прогресс выбранного дня">
+      <div class="metric"><span>Активное время</span><strong id="clock">00:00 <i>/ 30:00</i></strong><div class="track"><span id="timeBar"></span></div></div>
+      <div class="metric"><span>Пройдено блоков</span><strong id="sectionMetric">0 <i>/ 8</i></strong><div class="track"><span id="sectionBar"></span></div></div>
+      <div class="metric"><span>Слова в этом уроке</span><strong id="wordMetric">0 <i>/ 12</i></strong><div class="track"><span id="wordBar"></span></div></div>
+    </section>
+    <section class="lesson-title">
+      <div><div class="eyebrow" id="dayLabel">ПОНЕДЕЛЬНИК · 16 НОЯБРЯ</div><h2 id="lessonTitle">Давай познакомимся</h2><p id="lessonDescription"></p></div><span class="pill" id="lessonState">Можно начинать</span>
+    </section>
+    <nav class="sections" id="sectionsNav" aria-label="Выбор упражнения"></nav>
+    <div class="work-grid">
+      <section class="exercise" aria-label="Упражнение">
+        <div id="exerciseBody"></div>
+        <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+        <div class="exercise-bottom"><span id="exerciseHint">Все задания можно проходить в любом порядке.</span><button id="nextBlock" class="primary" type="button">Следующий блок →</button></div>
+      </section>
+      <aside class="reference" aria-label="Материал урока всегда под рукой">
+        <div class="ref-head"><span>ТВОЯ ШПАРГАЛКА</span><span class="ref-pin">📌 Всегда рядом</span></div>
+        <h3>Текст и слова урока</h3>
+        <p>Нажми на строчку, чтобы услышать её. Перевод можно подсмотреть — это нормально.</p>
+        <div id="referenceStory" class="reference-story"></div>
+        <details class="glossary" open><summary>Словарь с переводом <span id="glossaryCount"></span></summary><div id="referenceWords"></div></details>
+        <details class="grammar" open><summary>Полезное правило</summary><p id="referenceGrammar"></p></details>
+      </aside>
+    </div>
+    <section class="finish-panel" id="finishPanel" aria-live="polite"></section>
+    <section class="storage">
+      <div><h3>Твой прогресс остаётся с тобой</h3><p>Выполненные задания, ошибки и время сохраняются в этом браузере. Для переноса на другое устройство можно сохранить резервную копию.</p></div>
+      <div class="storage-buttons"><button id="exportProgress" class="outline" type="button">↓ Скачать прогресс</button><label class="import-label outline" for="importProgress">↑ Восстановить<input id="importProgress" type="file" accept="application/json,.json" hidden></label></div>
+    </section>
+    <footer>English practice · Первая пробная неделя · Результаты не отправляются в GitHub и не доступны другим людям. Для озвучки используется голос браузера; качество зависит от установленных голосов. Распознавание микрофона — не проверка произношения.</footer>
+  </main>
+</div>
+<script src="./lessons.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>
