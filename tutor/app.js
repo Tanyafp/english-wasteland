@@ -415,13 +415,14 @@ $("pinButton").onclick=async()=>{
  else{let h=await hashPin(pin,state.parentPin.salt);if(h===state.parentPin.hash){parentUnlocked=true;$("pinInput").value="";$("pinMessage").textContent="";renderParent()}else $("pinMessage").textContent="Неверный PIN"}
 };
 $("lessonSelect").onchange=()=>{$("extraWords").value=(state.extraWordsByLesson[$("lessonSelect").value]||[]).map(p=>p[0]+" = "+p[1]).join("\n")};
+$("parentAssignDate").onchange=()=>{parentAssignmentDate=$("parentAssignDate").value;fillAssignment(parentAssignmentDate)};
 $("assignLesson").onclick=()=>{
  let id=$("lessonSelect").value,lines=$("extraWords").value.split("\n").map(v=>v.trim()).filter(Boolean);
  const pairs=[];for(const line of lines){let i=line.indexOf("=");if(i<1||!line.slice(i+1).trim()){$("assignMessage").textContent="Неверная строка: "+line+". Формат: word = перевод";return}pairs.push([line.slice(0,i).trim().toLowerCase(),line.slice(i+1).trim()])}
  if(pairs.length>12){$("assignMessage").textContent="Можно назначить до 12 дополнительных слов.";return}
- state.extraWordsByLesson[id]=pairs;state.assigned=id;save();$("assignMessage").textContent="Назначено: "+LESSONS.find(l=>l.id===id).title+". Урок доступен в разделе «Урок».";renderParent();
+ state.extraWordsByLesson[id]=pairs;state.dayOverrides[parentAssignmentDate]=id;state.assigned=id;save();renderParent();$("assignMessage").textContent="Тема и слова на "+parentAssignmentDate+" сохранены. Они попадут в пятничную проверку.";if(selectedDate===parentAssignmentDate)render();
 };
-$("exportData").onclick=()=>{let blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),sessions:state.sessions,history:state.history,assigned:state.assigned},null,2)],{type:"application/json"});let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="english-tutor-report-"+today()+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000)};
+$("exportData").onclick=()=>{let blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),sessions:state.sessions,history:state.history,assigned:state.assigned,dayOverrides:state.dayOverrides,courseStart:CAL.ANCHOR},null,2)],{type:"application/json"});let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="english-tutor-report-"+today()+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000)};
 $("lockParent").onclick=()=>{parentUnlocked=false;view(false)};
 setInterval(tick,1000);render();
 })();
