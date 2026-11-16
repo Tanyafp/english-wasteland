@@ -3,7 +3,7 @@
 const K="english-tutor-v1";
 const $=id=>document.getElementById(id);
 const LESSONS=window.TUTOR_LESSONS||[];
-const DAY_MS=1800;
+const DAY_MS=1800; // Weekdays 30 minutes, Friday 45 minutes.
 const REQUIRED=["study","reading","understand","grammar","words","final","review"];
 const PHASES={study:"1 · Карточки",reading:"2 · Чтение вслух",understand:"3 · Вопросы по тексту",grammar:"4 · Грамматика",words:"5 · Выбор перевода",final:"6 · Проверка слов",review:"7 · Закрепление",completed:"Урок завершён"};
 const escapeHtml=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -17,13 +17,32 @@ state.assigned=state.assigned||LESSONS[0]?.id;
 state.sessions=state.sessions||{};
 state.history=state.history||[];
 state.extraWordsByLesson=state.extraWordsByLesson||{};
-let lastAction=Date.now(),lastSave=0,guardConnected=false,parentUnlocked=false,recognition=null;
+state.dayOverrides=state.dayOverrides||{};
+const CAL=window.ENGLISH_TUTOR_PLAN;
+let selectedDate=today();
+let lastAction=Date.now(),lastSave=0,parentUnlocked=false,recognition=null,lastCalendarToday=today();
 function save(){localStorage.setItem(K,JSON.stringify(state));lastSave=Date.now()}
-function lesson(){return LESSONS.find(x=>x.id===state.assigned)||LESSONS[0]}
+function planFor(date=selectedDate){return CAL.plan(date,state.dayOverrides)}
+function lesson(){const p=planFor();return p.status==="lesson"?p.lesson:LESSONS[0]}
+function minSeconds(){const p=planFor();return (p.status==="lesson"?p.minutes:30)*60}
+function finalCount(){return planFor().isReview?8:5}
+function repeatTarget(){return planFor().isReview?6:3}
+function renderCalendar(){
+ const panel=$("calendarBoard");if(!panel)return;
+ const weeks=CAL.board(state.dayOverrides);
+ panel.innerHTML=weeks.map(week=>'<div class="calendar-week"><strong>Неделя '+week.week+'</strong><div class="calendar-days">'+week.dates.map((day,i)=>{
+  const labels=["Пн","Вт","Ср","Чт","Пт","Сб","Вс"],isPast=day.date<=today();
+  const stored=day.status==="lesson"?state.sessions[day.date+"|"+day.lesson.id]:null;
+  const status=stored?.complete?"✓ Сдано":stored?.active?"◐ Начато":day.status==="rest"?"Выходной":day.isReview?"Большая проверка":"Новый урок";
+  const label=day.status==="lesson"?day.lesson.title:day.status==="rest"?"Отдых":day.title;
+  return '<button type="button" data-calendar="'+day.date+'" '+(!isPast||day.status!=="lesson"?"disabled":"")+' class="calendar-day '+(selectedDate===day.date?"selected ":"")+(stored?.complete?"complete ":"")+(day.status==="rest"?"rest":"")+'"><b>'+labels[i]+' · '+day.date.slice(8)+'</b><span>'+escapeHtml(label)+'</span><small>'+status+'</small></button>';
+ }).join("")+'</div></div>').join("");
+ panel.querySelectorAll("[data-calendar]").forEach(b=>b.onclick=()=>{if(recognition){try{recognition.abort()}catch{}recognition=null}selectedDate=b.dataset.calendar;lastAction=Date.now();render();if(parentUnlocked)renderParent()});
+}
 function words(){let base=lesson().words.slice(),extras=state.extraWordsByLesson[lesson().id]||[];for(const pair of extras){if(!base.some(p=>norm(p[0])===norm(pair[0])))base.push(pair)}return base}
-function newSession(){return {date:today(),lessonId:lesson().id,stage:"study",studyIndex:0,compIndex:0,gramIndex:0,wordCursor:0,finalIndex:0,reviewIndex:0,reviewCorrect:0,active:0,spoken:false,readCoverage:null,spokenMode:"",streak:{},cardSeen:{},cardOpen:{},wordDone:{},complete:false,completedAt:null}}
+function newSession(){return {date:selectedDate,lessonId:lesson().id,stage:"study",studyIndex:0,compIndex:0,gramIndex:0,wordCursor:0,finalIndex:0,reviewIndex:0,reviewCorrect:0,active:0,spoken:false,readCoverage:null,spokenMode:"",streak:{},cardSeen:{},cardOpen:{},wordDone:{},complete:false,completedAt:null}}
 function session(){
- const key=today()+"|"+lesson().id;
+ const key=selectedDate+"|"+lesson().id;
  if(!state.sessions[key]){state.sessions[key]=newSession();save()}
  const s=state.sessions[key];
   s.streak=s.streak||{};s.cardSeen=s.cardSeen||{};s.cardOpen=s.cardOpen||{};s.wordDone=s.wordDone||{};
@@ -34,7 +53,7 @@ function session(){
   for(let i=0;i<(s.finalIndex||0);i++)s.finalDone[i]=true;
   s.compCursor=Math.min(s.compIndex||0,lesson().questions.length-1);
   s.gramCursor=Math.min(s.gramIndex||0,lesson().grammar.length-1);
-  s.finalCursor=Math.min(s.finalIndex||0,Math.min(5,words().length)-1);
+  s.finalCursor=Math.min(s.finalIndex||0,Math.min(finalCount(),words().length)-1);
   s.taskMigrationDone=true;save();
  }
  // Keep progress earned in the previous linear version.
@@ -52,8 +71,8 @@ function isDone(stage,s=session()){
   case "understand":return L.questions.every((q,i)=>!!s.compDone[i]);
   case "grammar":return L.grammar.every((q,i)=>!!s.gramDone[i]);
   case "words":return w.every(p=>!!s.wordDone[p[0]]);
-  case "final":return w.slice(0,5).every((p,i)=>!!s.finalDone[i]);
-  case "review":return (s.reviewCorrect||0)>=3;
+  case "final":return w.slice(0,finalCount()).every((p,i)=>!!s.finalDone[i]);
+  case "review":return (s.reviewCorrect||0)>=repeatTarget();
  }
  return false;
 }
@@ -72,8 +91,8 @@ function renderNav(){
 }
 function tryComplete(){
  const s=session();
- if(!s.complete&&allSectionsDone()&&s.active>=DAY_MS){
-  s.stage="completed";s.complete=true;s.completedAt=new Date().toISOString();save();render();unlockSteam();
+ if(!s.complete&&allSectionsDone()&&s.active>=minSeconds()){
+  s.stage="completed";s.complete=true;s.completedAt=new Date().toISOString();save();render();
  }
 }
 function sectionFinished(text){
@@ -81,14 +100,14 @@ function sectionFinished(text){
 }
 function wireNextSection(){const b=$("goNextSection");if(b)b.onclick=()=>changeStage(nextPending())}
 function note(t,isError=false){$("feedback").innerHTML='<div class="notice '+(isError?"error":"success")+'">'+escapeHtml(t)+'</div>'}
-function record(type,prompt,answer,expected,ok){state.history.push({at:new Date().toISOString(),date:today(),lessonId:lesson().id,type,prompt,answer:String(answer),expected:String(expected),ok});if(state.history.length>2500)state.history=state.history.slice(-2500);lastAction=Date.now();save()}
+function record(type,prompt,answer,expected,ok){state.history.push({at:new Date().toISOString(),date:selectedDate,lessonId:lesson().id,type,prompt,answer:String(answer),expected:String(expected),ok});if(state.history.length>2500)state.history=state.history.slice(-2500);lastAction=Date.now();save()}
 function advance(stage){let s=session();s.stage=stage;save();render()}
 function updateStats(){
  let s=session();
- $("timer").textContent=activeTime(s.active)+" / 30:00";
+ $("timer").textContent=activeTime(s.active)+" / "+activeTime(minSeconds());
  $("mastered").textContent=mastered()+" / "+words().length;
  $("progressBar").style.width=progress()+"%";
- const hint=$("completionHint");if(hint)hint.textContent="Выполнено "+completedSections()+" из "+REQUIRED.length+" разделов. Можно выбрать любой раздел. Steam откроется только когда все задания сделаны и прошло минимум 30 активных минут.";
+ const hint=$("completionHint");if(hint)hint.textContent="Выполнено "+completedSections()+" из "+REQUIRED.length+" разделов. Можно выбрать любой раздел. Для завершения нужны все задания и минимум "+Math.round(minSeconds()/60)+" активных минут.";
 }
 function changeStage(stage){if(!REQUIRED.includes(stage)&&stage!=="completed")return;try{if(recognition){recognition.abort();recognition=null}}catch{}session().stage=stage;save();render()}
 function textInput(placeholder){return '<div class="control"><input id="answerInput" type="text" autocomplete="off" spellcheck="false" placeholder="'+escapeHtml(placeholder)+'"><button id="submitAnswer" class="primary">Проверить</button></div>'}
