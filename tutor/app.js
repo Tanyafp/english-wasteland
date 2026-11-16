@@ -20,6 +20,7 @@ state.extraWordsByLesson=state.extraWordsByLesson||{};
 state.dayOverrides=state.dayOverrides||{};
 const CAL=window.ENGLISH_TUTOR_PLAN;
 let selectedDate=today();
+let parentAssignmentDate=today();
 let lastAction=Date.now(),lastSave=0,parentUnlocked=false,recognition=null,lastCalendarToday=today();
 function save(){localStorage.setItem(K,JSON.stringify(state));lastSave=Date.now()}
 function planFor(date=selectedDate){return CAL.plan(date,state.dayOverrides)}
@@ -380,6 +381,15 @@ function renderParentWeeks(){
   }).join("")+'</tbody></table></div></div>'
  ).join("");
 }
+function fillAssignment(date=parentAssignmentDate){
+ const targetPlan=planFor(date);
+ const lessonId=targetPlan.status==="lesson"&&!targetPlan.isReview?targetPlan.lesson.id:LESSONS[0].id;
+ $("lessonSelect").value=lessonId;
+ $("extraWords").value=(state.extraWordsByLesson[lessonId]||[]).map(p=>p[0]+" = "+p[1]).join("\n");
+ const locked=!!targetPlan.isReview;
+ $("lessonSelect").disabled=locked;$("extraWords").disabled=locked;$("assignLesson").disabled=locked;
+ $("assignMessage").textContent=locked?"Пятница формируется автоматически из четырёх предыдущих занятий.":"Здесь можно изменить тему или добавить слова.";
+}
 function renderParent(){
  const exists=!!state.parentPin;
  $("parentAuth").classList.toggle("hidden",parentUnlocked);
@@ -390,8 +400,11 @@ function renderParent(){
  const sessions=Object.values(state.sessions),done=sessions.filter(x=>x.complete),total=Math.round(sessions.reduce((n,s)=>n+(s.active||0),0)/60);
  $("parentDays").textContent=done.length;$("parentMinutes").textContent=total;$("parentErrors").textContent=state.history.filter(a=>!a.ok).length;
  renderParentWeeks();
- $("lessonSelect").innerHTML=LESSONS.map(l=>'<option value="'+l.id+'" '+(lesson().id===l.id?"selected":"")+'>'+escapeHtml(l.title)+" · "+escapeHtml(l.level)+"</option>").join("");
- $("extraWords").value=(state.extraWordsByLesson[lesson().id]||[]).map(p=>p[0]+" = "+p[1]).join("\n");
+ $("parentAssignDate").innerHTML=CAL.board(state.dayOverrides).flatMap(w=>w.dates).filter(d=>d.status==="lesson").map(d=>'<option value="'+d.date+'">'+d.date+' · '+escapeHtml(d.lesson.title)+'</option>').join("");
+ if(!CAL.board(state.dayOverrides).some(w=>w.dates.some(d=>d.date===parentAssignmentDate&&d.status==="lesson")))parentAssignmentDate=CAL.ANCHOR;
+ $("parentAssignDate").value=parentAssignmentDate;
+ $("lessonSelect").innerHTML=LESSONS.map(l=>'<option value="'+l.id+'" '+(planFor(parentAssignmentDate).lesson?.id===l.id?"selected":"")+'>'+escapeHtml(l.title)+" · "+escapeHtml(l.level)+"</option>").join("");
+ fillAssignment(parentAssignmentDate);
  if(planFor().status!=="lesson")$("parentWords").textContent="Выбери учебный день в расписании. Суббота и воскресенье свободны.";
  else $("parentWords").innerHTML='<div class="table-scroll"><table><thead><tr><th>Слово</th><th>Перевод выбран</th><th>Ошибок</th></tr></thead><tbody>'+words().map(w=>'<tr><td>'+escapeHtml(w[0])+'</td><td>'+(session().wordDone[w[0]]?'✓':'—')+'</td><td>'+state.history.filter(a=>a.type==="words"&&a.lessonId===lesson().id&&a.prompt===w[0]&&!a.ok).length+'</td></tr>').join("")+'</tbody></table></div>';
  $("attemptRows").innerHTML=state.history.slice(-90).reverse().map(a=>'<tr><td>'+escapeHtml(new Date(a.at).toLocaleString("ru-RU"))+'</td><td>'+escapeHtml(a.type)+'</td><td>'+escapeHtml(a.prompt).slice(0,110)+'</td><td>'+escapeHtml(a.answer).slice(0,100)+'</td><td style="color:'+(a.ok?"#1d7654":"#b33d41")+'">'+(a.ok?"Верно":"Ошибка")+'</td></tr>').join("")||'<tr><td colspan="5">Пока нет ответов</td></tr>';
