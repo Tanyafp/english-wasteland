@@ -369,6 +369,17 @@ function view(parent){
 $("studentNav").onclick=()=>view(false);
 $("parentNav").onclick=()=>view(true);
 async function hashPin(pin,salt){let data=new TextEncoder().encode(salt+":"+pin);let bytes=await crypto.subtle.digest("SHA-256",data);return Array.from(new Uint8Array(bytes)).map(x=>x.toString(16).padStart(2,"0")).join("")}
+function renderParentWeeks(){
+ const out=$("parentWeekSummary");if(!out)return;
+ out.innerHTML=CAL.board(state.dayOverrides).map(week=>
+  '<div class="parent-week"><h4>Неделя '+week.week+'</h4><div class="table-scroll"><table><thead><tr><th>День</th><th>Тема</th><th>Время</th><th>Состояние</th></tr></thead><tbody>'+week.dates.map(p=>{
+   if(p.status==="rest")return '<tr><td>'+p.date.slice(5)+'</td><td colspan="3">Выходной</td></tr>';
+   const result=state.sessions[p.date+"|"+p.lesson.id];
+   const label=result?.complete?"✓ Сдано":result?.active?"◐ В процессе":p.date<today()?"Пропущено":p.date===today()?"Сегодня":"Запланировано";
+   return '<tr><td>'+p.date.slice(5)+'</td><td>'+escapeHtml(p.lesson.title)+'</td><td>'+activeTime(result?.active||0)+' / '+p.minutes+':00</td><td>'+label+'</td></tr>';
+  }).join("")+'</tbody></table></div></div>'
+ ).join("");
+}
 function renderParent(){
  const exists=!!state.parentPin;
  $("parentAuth").classList.toggle("hidden",parentUnlocked);
@@ -378,6 +389,7 @@ function renderParent(){
  if(!parentUnlocked)return;
  const sessions=Object.values(state.sessions),done=sessions.filter(x=>x.complete),total=Math.round(sessions.reduce((n,s)=>n+(s.active||0),0)/60);
  $("parentDays").textContent=done.length;$("parentMinutes").textContent=total;$("parentErrors").textContent=state.history.filter(a=>!a.ok).length;
+ renderParentWeeks();
  $("lessonSelect").innerHTML=LESSONS.map(l=>'<option value="'+l.id+'" '+(lesson().id===l.id?"selected":"")+'>'+escapeHtml(l.title)+" · "+escapeHtml(l.level)+"</option>").join("");
  $("extraWords").value=(state.extraWordsByLesson[lesson().id]||[]).map(p=>p[0]+" = "+p[1]).join("\n");
  if(planFor().status!=="lesson")$("parentWords").textContent="Выбери учебный день в расписании. Суббота и воскресенье свободны.";
