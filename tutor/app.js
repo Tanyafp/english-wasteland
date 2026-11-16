@@ -232,9 +232,26 @@ function renderReading(){
 }
 function render(){
  if(!LESSONS.length){$("taskArea").textContent="Нет данных уроков.";return}
- let L=lesson(),s=session(),w=words(),el=$("taskArea");
+ renderCalendar();
+ const selected=planFor();
+ const el=$("taskArea");
+ if(selected.status!=="lesson"){
+  $("lessonLevel").textContent="Расписание";
+  $("lessonTitle").textContent=selected.title;
+  $("lessonInfo").textContent=selected.status==="rest"?"Отдыхай! Если остались незавершённые задания недели, вернись к ним в календаре.":"Четыре учебные недели закончились. Пройденные занятия сохранены, новые материалы появятся после обновления курса.";
+  $("lessonPhase").textContent=selected.status==="rest"?"Выходной":"Курс";
+  $("timer").textContent="—";$("mastered").textContent="—";
+  $("dailyStatus").textContent=selected.status==="rest"?"Выходной":"Курс завершён";
+  $("progressBar").style.width="0%";
+  $("completionHint").textContent="";
+  $("sectionNav").innerHTML="";$("lessonReference").innerHTML="";$("feedback").innerHTML="";
+  el.innerHTML='<div class="section-complete"><h3>'+(selected.status==="rest"?"Сегодня отдыхаем!":"Сегодня нового урока нет")+'</h3><p>Результаты прошлых уроков сохраняются. Выбери учебный день в календаре, если хочешь закончить пропущенные задания.</p></div>';
+  return;
+ }
+ const L=lesson(),s=session(),w=words();
+ $("dailyStatus").textContent=selected.isReview?"Пятница · повторение":"Урок "+selected.week+"-й недели";
  $("lessonTitle").textContent=L.title;$("lessonLevel").textContent=L.level;
- $("lessonInfo").textContent=L.topic+" · "+w.length+" слов · минимум 30 минут активной работы";
+ $("lessonInfo").textContent=L.topic+" · "+w.length+" слов · минимум "+Math.round(minSeconds()/60)+" минут активной работы · "+selectedDate;
  $("lessonPhase").textContent=PHASES[s.stage]||"Урок";$("feedback").innerHTML="";
  updateStats();renderReference();renderNav();
  if(s.stage==="study"){
@@ -298,7 +315,7 @@ function render(){
    note(ok?"Верно! Ты узнал значение слова.":"Пока нет. Правильно: "+ru+". Посмотри текст и карточки — это слово ещё вернётся.",!ok);
   });
  }else if(s.stage==="final"){
-  const subset=w.slice(0,Math.min(5,w.length)),n=subset.length;
+  const subset=w.slice(0,Math.min(finalCount(),w.length)),n=subset.length;
   const current=Math.min(s.finalCursor||0,n-1),p=subset[current];
   const picker=questionPicker(subset.map(p=>p[1]),s.finalDone,current);
   if(isDone("final")){el.innerHTML=sectionFinished("Письменная проверка завершена. Все ошибки можно найти в истории ответов.")+picker;wireNextSection();wireQuestionPicker("finalCursor");return}
@@ -314,30 +331,22 @@ function render(){
    else note("Не совсем. Посмотри предложение из текста и попробуй ещё раз.",true);
   });
  }else if(s.stage==="review"){
-  if(s.reviewCorrect>=3){el.innerHTML=sectionFinished("Три задания на закрепление выполнены. Если 30 минут ещё не прошло, повторяй карточки или читай текст; время продолжит учитываться при активной работе.");wireNextSection();return}
+  if(s.reviewCorrect>=repeatTarget()){el.innerHTML=sectionFinished("Закрепление выполнено. Если время ещё не закончилось, можно повторить карточки или прочитать текст.");wireNextSection();return}
   let p=w[s.reviewIndex%w.length];
-  el.innerHTML='<div class="eyebrow">Закрепление до 30 минут</div><p class="muted">Основные задания выполнены. Осталось активного времени: '+activeTime(Math.max(0,DAY_MS-s.active))+'.</p><div class="word">'+escapeHtml(p[1])+'</div>'+maskedExample(p[0])+textInput("Напиши по-английски")+sourceTextToggle()+'<p class="small muted">Нужно выполнить три правильные проверки.</p>';
+  el.innerHTML='<div class="eyebrow">Закрепление до 30 минут</div><p class="muted">Основные задания выполнены. Осталось активного времени: '+activeTime(Math.max(0,minSeconds()-s.active))+'.</p><div class="word">'+escapeHtml(p[1])+'</div>'+maskedExample(p[0])+textInput("Напиши по-английски")+sourceTextToggle()+'<p class="small muted">Нужно выполнить "+repeatTarget()+" правильных проверок.</p>';
   inputWire(ans=>{
     if(!ans.trim())return;
     let ok=equals(ans,p[0]);record("review",p[0],ans,p[0],ok);
-    if(ok){s.reviewCorrect++;s.reviewIndex++;save();if(s.active>=DAY_MS&&s.reviewCorrect>=3){complete();return}render();note("Верно. Продолжаем повторение.")}else{ s.reviewIndex++;save();render();note("Правильно: "+p[0]+". Мы вернёмся к нему ещё.",true)}
+    if(ok){s.reviewCorrect++;s.reviewIndex++;save();if(s.active>=minSeconds()&&s.reviewCorrect>=repeatTarget()&&allSectionsDone()){complete();return}render();note("Верно. Продолжаем повторение.")}else{ s.reviewIndex++;save();render();note("Правильно: "+p[0]+". Мы вернёмся к нему ещё.",true)}
   });
  }else if(s.stage==="completed"){
   el.innerHTML='<div class="eyebrow">На сегодня достаточно</div><h2>Урок сдан ✓</h2><p class="task">Ты занимался '+activeTime(s.active)+' и выполнил обязательные задания.</p><p>Выучено слов: <strong>'+mastered()+' из '+w.length+'</strong>. Завтра будут новые задания или повторение трудных слов.</p><p id="unlockMessage" class="notice">Проверка разрешения Steam…</p>';
-  syncGuard();
+
  }
 }
 function complete(){
  let s=session();s.stage="completed";s.complete=true;s.completedAt=new Date().toISOString();save();render();unlockSteam();
 }
-async function checkGuard(){
- try{const res=await fetch("/api/guard",{cache:"no-store"});if(!res.ok||!(res.headers.get("content-type")||"").includes("application/json"))throw Error("not running");const g=await res.json();guardConnected=true;$("steamStatus").textContent=g.unlocked?"Открыт":"Закрыт"}catch{guardConnected=false;$("steamStatus").textContent="Не подключён"}
-}
-async function unlockSteam(){
- if(!guardConnected){if($("unlockMessage"))$("unlockMessage").textContent="Урок завершён. Windows-защитник Steam не запущен — разблокировка не передана.";return}
- try{const r=await fetch("/api/unlock",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({date:today(),minutes:Math.floor(session().active/60),completed:session().complete})});if(!r.ok)throw Error("отказ сервера");const result=await r.json();if($("unlockMessage"))$("unlockMessage").textContent=result.unlocked?"Steam разрешён до конца сегодняшнего дня.":"Защитник не разрешил Steam.";await checkGuard()}catch(e){if($("unlockMessage"))$("unlockMessage").textContent="Не удалось открыть Steam: "+e.message}
-}
-function syncGuard(){checkGuard()}
 function tick(){
  if(document.visibilityState==="visible"&&document.hasFocus()&&(Date.now()-lastAction)<90000){
   let s=session();if(!s.complete){s.active+=1;if(Date.now()-lastSave>9000)save()}
@@ -381,5 +390,5 @@ $("assignLesson").onclick=()=>{
 };
 $("exportData").onclick=()=>{let blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),sessions:state.sessions,history:state.history,assigned:state.assigned},null,2)],{type:"application/json"});let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="english-tutor-report-"+today()+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000)};
 $("lockParent").onclick=()=>{parentUnlocked=false;view(false)};
-setInterval(tick,1000);render();checkGuard();
+setInterval(tick,1000);render();
 })();
