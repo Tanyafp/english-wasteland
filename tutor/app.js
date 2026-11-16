@@ -418,7 +418,7 @@ $("assignLesson").onclick=()=>{
  let id=$("lessonSelect").value,lines=$("extraWords").value.split("\n").map(v=>v.trim()).filter(Boolean);
  const pairs=[];for(const line of lines){let i=line.indexOf("=");if(i<1||!line.slice(i+1).trim()){$("assignMessage").textContent="Неверная строка: "+line+". Формат: word = перевод";return}pairs.push([line.slice(0,i).trim().toLowerCase(),line.slice(i+1).trim()])}
  if(pairs.length>12){$("assignMessage").textContent="Можно назначить до 12 дополнительных слов.";return}
- state.extraWordsByLesson[id]=pairs;state.dayOverrides[parentAssignmentDate]=id;state.assigned=id;save();renderParent();$("assignMessage").textContent="Тема и слова на "+parentAssignmentDate+" сохранены. Они попадут в пятничную проверку.";if(selectedDate===parentAssignmentDate)render();
+ state.extraWordsByLesson[id]=pairs;state.dayOverrides[parentAssignmentDate]=id;state.assigned=id;save();renderParent();$("assignMessage").textContent="Тема на "+parentAssignmentDate+" сохранена. В пятницу попадут базовые слова и до двух дополнительных слов этого дня.";if(selectedDate===parentAssignmentDate)render();
 };
 $("exportData").onclick=()=>{let blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),sessions:state.sessions,history:state.history,assigned:state.assigned,dayOverrides:state.dayOverrides,courseStart:CAL.ANCHOR},null,2)],{type:"application/json"});let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="english-tutor-report-"+today()+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000)};
 $("lockParent").onclick=()=>{parentUnlocked=false;view(false)};
