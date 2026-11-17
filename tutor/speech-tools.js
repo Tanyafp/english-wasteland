@@ -57,11 +57,18 @@ async function recorded(word){
  const key=word.toLowerCase();
  if(cache.has(key))return cache.get(key);
  try{
-  const r=await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+encodeURIComponent(key));
-  if(!r.ok)throw Error("No dictionary recording");
-  const entries=await r.json();
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),4500);
+  let entries;
+  try{
+   const r=await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+encodeURIComponent(key),{signal:controller.signal});
+   if(!r.ok)throw Error("No dictionary recording");
+   entries=await r.json();
+  }finally{clearTimeout(timeout)}
   const list=Array.isArray(entries)?entries:[];
-  const urls=list.flatMap(e=>e.phonetics||[]).map(p=>p.audio).filter(u=>typeof u==="string"&&u.startsWith("https://"));
+  const urls=list.flatMap(e=>e.phonetics||[]).map(p=>p.audio)
+   .filter(u=>typeof u==="string"&&(u.startsWith("https://")||u.startsWith("//")))
+   .map(u=>u.startsWith("//")?"https:"+u:u);
   const url=urls.find(u=>/-us\.mp3|_us_|us\.mp3/i.test(u))||urls[0]||"";
   cache.set(key,url);return url;
  }catch{cache.set(key,"");return ""}
@@ -115,6 +122,7 @@ if("speechSynthesis" in window){
 }
 function wordMarkup(sentence,result){
  const a=tokens(sentence),hits=new Set(result?.hits||[]);
+ if(result?.manual)result=null;
  return a.map((word,i)=>{
   const klass=!result?"":hits.has(i)?"heard":"unheard";
   const aria=!result?"Прослушать слово ":hits.has(i)?"Распознано, прослушать ":"Не распознано, прослушать ";
