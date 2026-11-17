@@ -63,3 +63,34 @@
 .parent-week h4{margin:8px 0;font-size:15px;color:#385578}
 @media(max-width:900px){.calendar-days{grid-template-columns:repeat(7,minmax(112px,1fr));width:max-content}.calendar-week{overflow-x:auto;padding-bottom:6px}.calendar-day{width:112px}}
 @media(max-width:540px){#calendarPanel h3{font-size:18px}.calendar-days{grid-template-columns:repeat(7,minmax(107px,1fr))}.calendar-day{width:107px;min-height:105px}}
+
+
+/* Listening and sentence-by-sentence pronunciation practice. */
+.tutor-voice-settings{display:flex;align-items:flex-end;flex-wrap:wrap;gap:10px;background:#eef5ff;border:1px solid #c9dbf2;padding:12px;border-radius:13px;margin:14px 0}
+.tutor-voice-settings label{font-size:12px;font-weight:750;display:flex;flex-direction:column;gap:5px;flex:1;min-width:145px}
+.tutor-voice-settings select{width:100%;padding:9px;min-height:42px}
+.tutor-voice-demo{font-size:13px;min-height:42px}
+.tutor-flash-wrap{min-width:0;display:flex;flex-direction:column;gap:6px}
+.tutor-flash-wrap .flashcard{width:100%;flex:1}
+.tutor-card-sound{width:100%;background:#dceeff;border:1px solid #a3c6ee;color:#204e86;font-size:13px;padding:7px 10px}
+.tutor-sentence-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:14px 0}
+.tutor-sentence-nav strong{font-size:14px;text-align:center}
+.tutor-sentence-nav button{padding:9px;font-size:13px}
+.tutor-sentence{min-height:118px;padding:20px 15px;background:linear-gradient(145deg,#eef5ff,#f7faff);border:1px solid #c6d9ef;border-radius:16px;display:flex;justify-content:center;align-content:center;align-items:center;flex-wrap:wrap;gap:7px;line-height:1.6;margin:12px 0}
+.tutor-read-word{border:1px solid #c9daed;background:white;color:#22364e;border-radius:8px;font-size:18px;font-weight:730;padding:7px 10px;line-height:1.4}
+.tutor-read-word span{font-size:11px;opacity:.68}
+.tutor-read-word.heard{background:#dff6e9;border-color:#7ecba4;color:#165f41}
+.tutor-read-word.unheard{background:#fff0ed;border-color:#dfa79f;color:#9b343b}
+.tutor-read-actions{display:flex;gap:8px;flex-wrap:wrap;margin:13px 0}
+.tutor-read-actions button{font-size:13px}
+.tutor-read-feedback{background:#f8fafc;border:1px solid #d6e1ed;border-radius:12px;padding:11px 14px;margin:12px 0;min-height:62px}
+.tutor-read-feedback p{margin:4px 0}
+.tutor-read-manual{background:#fafbfd;border:1px solid #dce6ef;border-radius:10px;padding:10px 13px;margin:10px 0}
+.tutor-read-manual summary{cursor:pointer;color:#476482;font-weight:650;font-size:13px}
+.tutor-read-manual p{margin:9px 0}
+.tutor-sentence-pills{display:flex;flex-wrap:wrap;gap:6px;padding:10px 0 14px;border-top:1px solid #e2eaf3;margin-top:16px}
+.tutor-sentence-pills button{padding:5px 9px;font-size:12px;min-width:36px}
+.tutor-sentence-pills button.active{background:#205ba7;border-color:#205ba7;color:white}
+.tutor-sentence-pills button.done:not(.active){background:#e1f6ea;border-color:#88c9a7;color:#145f3d}
+#sentenceContinue{margin-top:9px}
+@media(max-width:560px){.tutor-sentence-nav{flex-wrap:wrap}.tutor-sentence-nav strong{order:-1;width:100%}.tutor-sentence-nav button{flex:1}.tutor-sentence{padding:14px 8px}.tutor-read-word{font-size:15px;padding:6px 8px}.tutor-read-actions button{flex:1 1 42%}.tutor-voice-settings label{min-width:100%}.tutor-flash-wrap .flashcard{min-height:120px}}
