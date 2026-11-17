@@ -242,13 +242,14 @@ function render(){
      const open=!!s.cardOpen[p[0]],seen=!!s.cardSeen[p[0]];
      return '<div class="tutor-flash-wrap"><button type="button" class="flashcard '+(open?"flipped":"")+
       '" data-flash="'+escapeHtml(p[0])+'" aria-label="Перевернуть карточку '+escapeHtml(p[0])+'"><span class="flash-main">'+escapeHtml(open?p[1]:p[0])+
-      '</span><span class="flash-hint">'+(open?escapeHtml(p[0]):"Нажми, чтобы увидеть перевод")+'</span>'+
+      '</span><span class="flash-hint">'+(open?escapeHtml(p[0]):"Нажми, чтобы увидеть перевод")+'</span><span class="tutor-ipa" data-ipa="'+escapeHtml(p[0])+'">Произношение загружается…</span>'+
       (seen?'<span class="flash-check">✓ Просмотрено</span>':'')+
       '</button><button type="button" class="tutor-card-sound" data-card-sound="'+escapeHtml(p[0])+'" aria-label="Прослушать '+escapeHtml(p[0])+'">🔊 Слушать</button></div>';
     }).join("")+'</div>'+
     '<p class="small muted">Можно слушать слово сколько угодно раз, а задания проходить в любом порядке. Качественная словарная запись требует интернета; иначе включается выбранный голос браузера.</p>'+
     (isDone("study")?sectionFinished("Все карточки просмотрены. Позже слова будут встречаться в тексте и заданиях."):"");
   window.TUTOR_SPEECH.bindVoiceSettings(el);
+  window.TUTOR_SPEECH.fillPronunciations(el);
   el.querySelectorAll("[data-flash]").forEach(b=>b.onclick=()=>{
    const en=b.dataset.flash;s.cardOpen[en]=!s.cardOpen[en];const justOpened=s.cardOpen[en];
    if(justOpened)s.cardSeen[en]=true;lastAction=Date.now();save();render();
