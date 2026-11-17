@@ -94,3 +94,5 @@
 .tutor-sentence-pills button.done:not(.active){background:#e1f6ea;border-color:#88c9a7;color:#145f3d}
 #sentenceContinue{margin-top:9px}
 @media(max-width:560px){.tutor-sentence-nav{flex-wrap:wrap}.tutor-sentence-nav strong{order:-1;width:100%}.tutor-sentence-nav button{flex:1}.tutor-sentence{padding:14px 8px}.tutor-read-word{font-size:15px;padding:6px 8px}.tutor-read-actions button{flex:1 1 42%}.tutor-voice-settings label{min-width:100%}.tutor-flash-wrap .flashcard{min-height:120px}}
+
+.tutor-ipa{display:block;min-height:22px;font:500 12px/1.5 system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:#526f8d;margin-top:7px;overflow-wrap:anywhere}
