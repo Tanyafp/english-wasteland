@@ -38,7 +38,7 @@ function renderCalendar(){
   const label=day.status==="lesson"?day.lesson.title:day.status==="rest"?"Отдых":day.title;
   return '<button type="button" data-calendar="'+day.date+'" '+(!isPast||day.status!=="lesson"?"disabled":"")+' class="calendar-day '+(selectedDate===day.date?"selected ":"")+(stored?.complete?"complete ":"")+(day.status==="rest"?"rest":"")+'"><b>'+labels[i]+' · '+day.date.slice(8)+'</b><span>'+escapeHtml(label)+'</span><small>'+status+'</small></button>';
  }).join("")+'</div></div>').join("");
- panel.querySelectorAll("[data-calendar]").forEach(b=>b.onclick=()=>{if(recognition){try{recognition.abort()}catch{}recognition=null}selectedDate=b.dataset.calendar;lastAction=Date.now();render();if(parentUnlocked)renderParent()});
+ panel.querySelectorAll("[data-calendar]").forEach(b=>b.onclick=()=>{if(recognition){try{recognition.abort()}catch{}recognition=null}window.TUTOR_SPEECH.cancel();selectedDate=b.dataset.calendar;lastAction=Date.now();render();if(parentUnlocked)renderParent()});
 }
 function words(){let base=lesson().words.slice(),extras=state.extraWordsByLesson[lesson().id]||[];for(const pair of extras){if(!base.some(p=>norm(p[0])===norm(pair[0])))base.push(pair)}return base}
 function newSession(){return {date:selectedDate,lessonId:lesson().id,stage:"study",studyIndex:0,compIndex:0,gramIndex:0,wordCursor:0,finalIndex:0,reviewIndex:0,reviewCorrect:0,active:0,spoken:false,readCoverage:null,spokenMode:"",streak:{},cardSeen:{},cardOpen:{},wordDone:{},complete:false,completedAt:null}}
@@ -110,7 +110,7 @@ function updateStats(){
  $("progressBar").style.width=progress()+"%";
  const hint=$("completionHint");if(hint)hint.textContent="Выполнено "+completedSections()+" из "+REQUIRED.length+" разделов. Можно выбрать любой раздел. Для завершения нужны все задания и минимум "+Math.round(minSeconds()/60)+" активных минут.";
 }
-function changeStage(stage){if(!REQUIRED.includes(stage)&&stage!=="completed")return;try{if(recognition){recognition.abort();recognition=null}}catch{}session().stage=stage;save();render()}
+function changeStage(stage){if(!REQUIRED.includes(stage)&&stage!=="completed")return;window.TUTOR_SPEECH.cancel();try{if(recognition){recognition.abort();recognition=null}}catch{}session().stage=stage;save();render()}
 function textInput(placeholder){return '<div class="control"><input id="answerInput" type="text" autocomplete="off" spellcheck="false" placeholder="'+escapeHtml(placeholder)+'"><button id="submitAnswer" class="primary">Проверить</button></div>'}
 function inputWire(fn,voiceLang="en-US"){
  const input=$("answerInput"),submit=$("submitAnswer");
@@ -203,33 +203,11 @@ function readingScore(transcript,text){
  return {percent:original.length?Math.round(hits.length/original.length*100):0,hits};
 }
 function renderReading(){
- let s=session(),L=lesson();
- $("taskArea").innerHTML='<div class="eyebrow">Чтение и произношение</div><p>Прочитай английский текст вслух. Затем ответь на вопросы по смыслу.</p><div class="reading" id="readingText">'+escapeHtml(L.text)+'</div><div class="control"><button id="listenButton" class="primary">🎤 Начать чтение</button><button id="stopButton" disabled>Остановить запись</button><button id="manualRead">Я прочитал вслух (если микрофон не работает)</button></div><p class="small muted" id="readHelp">Распознавание речи зависит от браузера и интернета. Оно не проверяет каждый звук.</p><div id="readReport"></div><button id="continueRead" class="primary" '+(s.spoken?"":"disabled")+'>Перейти к вопросам</button>';
- $("continueRead").onclick=()=>changeStage("understand");
- $("manualRead").onclick=()=>{s.spoken=true;s.spokenMode="manual";save();render();note("Чтение отмечено вручную; точность произношения не оценивалась.")};
- $("listenButton").onclick=()=>{
-   const Engine=window.SpeechRecognition||window.webkitSpeechRecognition;
-   if(!Engine){$("readHelp").textContent="В этом браузере нет распознавания речи. Используй Chrome или ручную отметку.";return}
-   let buffer="";
-   try{
-    recognition=new Engine();recognition.lang="en-US";recognition.continuous=true;recognition.interimResults=false;recognition.maxAlternatives=1;
-    $("listenButton").disabled=true;$("stopButton").disabled=false;
-    $("readHelp").textContent="Читай вслух в обычном темпе. Нажми «Остановить запись», когда закончишь.";
-    recognition.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)buffer+=" "+e.results[i][0].transcript}lastAction=Date.now()};
-    recognition.onerror=e=>{$("readHelp").textContent="Микрофон: "+e.error+". Можно попробовать ещё раз."};
-    const activeRecognition=recognition;
-    recognition.onend=()=>{
-      if(recognition!==activeRecognition)return;
-      recognition=null;
-      if(s.stage!=="reading")return;
-      if(buffer.trim()){const report=readingScore(buffer,L.text);s.spoken=true;s.spokenMode="recognized";s.readCoverage=report.percent;save();render();note("Микрофон распознал примерно "+report.percent+"% слов текста. Это приблизительный результат распознавания, не оценка произношения и не ошибка в уроке.")}
-      else {render();note("Речь не распознана. Попробуй снова или воспользуйся ручной отметкой.",true)}
-    };
-    recognition.start();
-    $("stopButton").onclick=()=>{if(recognition)recognition.stop()};
-   }catch(e){$("readHelp").textContent="Не удалось запустить микрофон: "+e.message}
- };
- if(s.spoken){$("readReport").innerHTML='<div class="notice">Чтение выполнено'+(s.readCoverage==null?" (ручная отметка)":": распознано около "+s.readCoverage+"% слов")+'.</div>'}
+ window.TUTOR_SPEECH.renderReading({
+  root:$("taskArea"),lesson:lesson(),session:session(),save,record,
+  refresh:render,goNext:()=>changeStage("understand"),
+  onAction:()=>{lastAction=Date.now()}
+ });
 }
 function render(){
  if(!LESSONS.length){$("taskArea").textContent="Нет данных уроков.";return}
@@ -257,11 +235,26 @@ function render(){
  updateStats();renderReference();renderNav();
  if(s.stage==="study"){
   const seen=w.filter(p=>s.cardSeen[p[0]]).length;
-  el.innerHTML='<div class="eyebrow">Карточки для знакомства · '+seen+'/'+w.length+'</div><p>Никакой зубрёжки с первого раза. Нажимай на карточки — они перевернутся и покажут перевод. Все карточки можно просматривать сколько угодно раз.</p><div class="flash-grid">'+w.map(p=>{
-   const open=!!s.cardOpen[p[0]],seen=!!s.cardSeen[p[0]];
-   return '<button type="button" class="flashcard '+(open?"flipped":"")+'" data-flash="'+escapeHtml(p[0])+'" aria-label="Перевернуть карточку '+escapeHtml(p[0])+'"><span class="flash-main">'+escapeHtml(open?p[1]:p[0])+'</span><span class="flash-hint">'+(open?escapeHtml(p[0]):"Нажми, чтобы увидеть перевод")+'</span>'+(seen?'<span class="flash-check">✓ Просмотрено</span>':'')+'</button>';
-  }).join("")+'</div><p class="small muted">Можешь начать с вопросов или чтения — карточки никуда не исчезнут.</p>'+(isDone("study")?sectionFinished("Все карточки просмотрены. Позже слова будут встречаться в тексте и заданиях."):"");
-  el.querySelectorAll("[data-flash]").forEach(b=>b.onclick=()=>{const en=b.dataset.flash;s.cardOpen[en]=!s.cardOpen[en];if(s.cardOpen[en])s.cardSeen[en]=true;save();render()});
+  el.innerHTML='<div class="eyebrow">Карточки для знакомства · '+seen+'/'+w.length+'</div>'+
+   '<p>Переверни карточку и прослушай слово. Кнопка 🔊 работает и на закрытой карточке. Для отдельных слов сначала попробуем запись из англоязычного словаря.</p>'+
+   window.TUTOR_SPEECH.renderVoiceSettings()+
+   '<div class="flash-grid">'+w.map(p=>{
+     const open=!!s.cardOpen[p[0]],seen=!!s.cardSeen[p[0]];
+     return '<div class="tutor-flash-wrap"><button type="button" class="flashcard '+(open?"flipped":"")+
+      '" data-flash="'+escapeHtml(p[0])+'" aria-label="Перевернуть карточку '+escapeHtml(p[0])+'"><span class="flash-main">'+escapeHtml(open?p[1]:p[0])+
+      '</span><span class="flash-hint">'+(open?escapeHtml(p[0]):"Нажми, чтобы увидеть перевод")+'</span>'+
+      (seen?'<span class="flash-check">✓ Просмотрено</span>':'')+
+      '</button><button type="button" class="tutor-card-sound" data-card-sound="'+escapeHtml(p[0])+'" aria-label="Прослушать '+escapeHtml(p[0])+'">🔊 Слушать</button></div>';
+    }).join("")+'</div>'+
+    '<p class="small muted">Можно слушать слово сколько угодно раз, а задания проходить в любом порядке. Качественная словарная запись требует интернета; иначе включается выбранный голос браузера.</p>'+
+    (isDone("study")?sectionFinished("Все карточки просмотрены. Позже слова будут встречаться в тексте и заданиях."):"");
+  window.TUTOR_SPEECH.bindVoiceSettings(el);
+  el.querySelectorAll("[data-flash]").forEach(b=>b.onclick=()=>{
+   const en=b.dataset.flash;s.cardOpen[en]=!s.cardOpen[en];const justOpened=s.cardOpen[en];
+   if(justOpened)s.cardSeen[en]=true;lastAction=Date.now();save();render();
+   if(justOpened)window.TUTOR_SPEECH.sayWord(en);
+  });
+  el.querySelectorAll("[data-card-sound]").forEach(b=>b.onclick=()=>{lastAction=Date.now();window.TUTOR_SPEECH.sayWord(b.dataset.cardSound)});
   wireNextSection();
  }else if(s.stage==="reading"){renderReading()}
  else if(s.stage==="understand"){
@@ -363,6 +356,7 @@ for(const evt of ["pointerdown","keydown","scroll"]){document.addEventListener(e
 document.addEventListener("visibilitychange",()=>{lastAction=Date.now();save()});
 window.addEventListener("beforeunload",save);
 function view(parent){
+ window.TUTOR_SPEECH.cancel();
  $("studentView").classList.toggle("hidden",parent);$("parentView").classList.toggle("hidden",!parent);if(parent)renderParent();else render();
 }
 $("studentNav").onclick=()=>view(false);
