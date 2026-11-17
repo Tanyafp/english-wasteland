@@ -55,7 +55,7 @@ function synth(text,slow=false){
 }
 async function recorded(word){
  const key=word.toLowerCase();
- if(cache.has(key))return cache.get(key);
+ if(cache.has(key))return cache.get(key).url;
  try{
   const controller=new AbortController();
   const timeout=setTimeout(()=>controller.abort(),4500);
@@ -70,8 +70,27 @@ async function recorded(word){
    .filter(u=>typeof u==="string"&&(u.startsWith("https://")||u.startsWith("//")))
    .map(u=>u.startsWith("//")?"https:"+u:u);
   const url=urls.find(u=>/-us\.mp3|_us_|us\.mp3/i.test(u))||urls[0]||"";
-  cache.set(key,url);return url;
- }catch{cache.set(key,"");return ""}
+  const ipa=list.flatMap(e=>[e.phonetic,...(e.phonetics||[]).map(p=>p.text)])
+   .find(x=>typeof x==="string"&&x.trim())||"";
+  cache.set(key,{url,ipa});return url;
+ }catch{cache.set(key,{url:"",ipa:""});return ""}
+}
+async function phonetic(word){
+ const key=word.toLowerCase();
+ if(!cache.has(key))await recorded(word);
+ return cache.get(key)?.ipa||"";
+}
+function fillPronunciations(root){
+ if(!root)return;
+ root.querySelectorAll("[data-ipa]").forEach(async el=>{
+  const term=el.dataset.ipa;
+  if(!term)return;
+  const parts=term.split(/\s+/).filter(Boolean);
+  const values=await Promise.all(parts.map(phonetic));
+  if(!el.isConnected)return;
+  const nonempty=values.filter(Boolean);
+  el.textContent=nonempty.length?nonempty.join(" ")+" · 🔊":"Нажми 🔊, чтобы послушать";
+ });
 }
 async function sayWord(word){
  const key=String(word||"").trim();if(!key)return;
@@ -215,5 +234,5 @@ function renderReading(args){
   }
  }
 }
-window.TUTOR_SPEECH={renderReading,renderVoiceSettings,bindVoiceSettings,sayWord,cancel,align,sentences};
+window.TUTOR_SPEECH={renderReading,renderVoiceSettings,bindVoiceSettings,fillPronunciations,sayWord,cancel,align,sentences};
 })();
